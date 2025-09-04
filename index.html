@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+<!-- 
+    AI工作流平台 - 生产版本
+    代码已混淆处理，文件名随机化保护架构信息
+    构建时间: 2025-09-04T07:47:18.722Z
+-->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI工作流平台</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <!-- 顶部工具栏 -->
+    <header class="toolbar">
+        <div class="toolbar-left">
+            <h1><i class="fas fa-project-diagram"></i> AI工作流平台</h1>
+        </div>
+        <div class="toolbar-center">
+            <button id="playBtn" class="btn btn-success" title="执行工作流">
+                <i class="fas fa-play"></i> 执行
+            </button>
+            <button id="stopBtn" class="btn btn-danger" title="停止执行" disabled>
+                <i class="fas fa-stop"></i> 停止
+            </button>
+            <button id="saveBtn" class="btn btn-primary" title="保存工作流">
+                <i class="fas fa-save"></i> 保存
+            </button>
+            <button id="loadBtn" class="btn btn-secondary" title="加载工作流">
+                <i class="fas fa-folder-open"></i> 加载
+            </button>
+            <button id="exportBtn" class="btn btn-info" title="导出工作流">
+                <i class="fas fa-download"></i> 导出
+            </button>
+            <input type="file" id="importFile" accept=".json" style="display: none;">
+            <button id="importBtn" class="btn btn-warning" title="导入工作流">
+                <i class="fas fa-upload"></i> 导入
+            </button>
+            <button id="presetsBtn" class="btn btn-info" title="预设模板">
+                <i class="fas fa-layer-group"></i> 模板
+            </button>
+            <button id="variablesBtn" class="btn btn-warning" title="全局存储管理">
+                <i class="fas fa-database"></i> 存储
+            </button>
+            <button id="agentBtn" class="btn btn-success" title="工作流智能体">
+                <i class="fas fa-robot"></i> 智能体
+            </button>
+        </div>
+        <div class="toolbar-right">
+            <button id="settingsBtn" class="btn btn-secondary" title="设置">
+                <i class="fas fa-cog"></i> 设置
+            </button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- 左侧节点库 -->
+        <aside class="sidebar left-sidebar" id="leftSidebar">
+            <div class="sidebar-content">
+                <div class="sidebar-header">
+                    <h3><i class="fas fa-puzzle-piece"></i> 节点库</h3>
+                </div>
+                <div class="node-library">
+                    <div class="node-category" data-category="ai">
+                        <div class="category-header">
+                            <h4><i class="fas fa-robot"></i> AI节点</h4>
+                            <button class="category-toggle" data-target="ai-nodes">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </div>
+                        <div class="category-content" id="ai-nodes">
+                            <div class="node-item" data-type="ai-chat">
+                                <i class="fas fa-comments"></i>
+                                <span>AI对话</span>
+                            </div>
+                            <div class="node-item" data-type="ai-text-generation">
+                                <i class="fas fa-pen-fancy"></i>
+                                <span>文本生成</span>
+                            </div>
+                            <div class="node-item" data-type="ai-text-analysis">
+                                <i class="fas fa-search"></i>
+                                <span>文本分析</span>
+                            </div>
+                            <div class="node-item" data-type="ai-image-generation">
+                                <i class="fas fa-image"></i>
+                                <span>图像生成</span>
+                            </div>
+                            <div class="node-item" data-type="ai-image-edit">
+                                <i class="fas fa-paint-brush"></i>
+                                <span>图像编辑</span>
+                            </div>
+                            <div class="node-item" data-type="ai-image-variation">
+                                <i class="fas fa-clone"></i>
+                                <span>图像变体</span>
+                            </div>
+                            <div class="node-item" data-type="ai-audio-transcription">
+                                <i class="fas fa-microphone"></i>
+                                <span>音频转录</span>
+                            </div>
+                            <div class="node-item" data-type="ai-text-to-speech">
+                                <i class="fas fa-volume-up"></i>
+                                <span>文本转语音</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="node-category" data-category="file">
+                        <div class="category-header">
+                            <h4><i class="fas fa-file"></i> 文件节点</h4>
+                            <button class="category-toggle" data-target="file-nodes">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </div>
+                        <div class="category-content" id="file-nodes">
+                            <div class="node-item" data-type="file-input">
+                                <i class="fas fa-file-import"></i>
+                                <span>文件输入</span>
+                            </div>
+                            <div class="node-item" data-type="file-output">
+                                <i class="fas fa-file-export"></i>
+                                <span>文件输出</span>
+                            </div>
+                            <div class="node-item" data-type="text-input">
+                                <i class="fas fa-keyboard"></i>
+                                <span>文本输入</span>
+                            </div>
+                            <div class="node-item" data-type="optional-input">
+                                <i class="fas fa-edit"></i>
+                                <span>可选输入</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="node-category" data-category="control">
+                        <div class="category-header">
+                            <h4><i class="fas fa-code-branch"></i> 控制节点</h4>
+                            <button class="category-toggle" data-target="control-nodes">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </div>
+                        <div class="category-content" id="control-nodes">
+                            <div class="node-item" data-type="condition">
+                                <i class="fas fa-question-circle"></i>
+                                <span>条件判断</span>
+                            </div>
+                            <div class="node-item" data-type="loop">
+                                <i class="fas fa-redo"></i>
+                                <span>循环</span>
+                            </div>
+                            <div class="node-item" data-type="delay">
+                                <i class="fas fa-clock"></i>
+                                <span>延时</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="node-category" data-category="tool">
+                        <div class="category-header">
+                            <h4><i class="fas fa-tools"></i> 工具节点</h4>
+                            <button class="category-toggle" data-target="tool-nodes">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </div>
+                        <div class="category-content" id="tool-nodes">
+                            <div class="node-item" data-type="http-request">
+                                <i class="fas fa-globe"></i>
+                                <span>HTTP请求</span>
+                            </div>
+                            <div class="node-item" data-type="json-parser">
+                                <i class="fas fa-code"></i>
+                                <span>JSON解析</span>
+                            </div>
+                            <div class="node-item" data-type="text-transform">
+                                <i class="fas fa-magic"></i>
+                                <span>文本转换</span>
+                            </div>
+                            <div class="node-item" data-type="text-splitter">
+                                <i class="fas fa-cut"></i>
+                                <span>文本分割</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="node-category" data-category="interaction">
+                        <div class="category-header">
+                            <h4><i class="fas fa-window-restore"></i> 交互节点</h4>
+                            <button class="category-toggle" data-target="interaction-nodes">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </div>
+                        <div class="category-content" id="interaction-nodes">
+                            <div class="node-item" data-type="ai-chat-window">
+                                <i class="fas fa-comments"></i>
+                                <span>AI对话窗口</span>
+                            </div>
+                            <div class="node-item" data-type="code-editor">
+                                <i class="fas fa-code"></i>
+                                <span>代码编辑器</span>
+                            </div>
+                            <div class="node-item" data-type="web-browser">
+                                <i class="fas fa-globe"></i>
+                                <span>网页浏览器</span>
+                            </div>
+                            <div class="node-item" data-type="data-analysis">
+                                <i class="fas fa-chart-line"></i>
+                                <span>数据分析</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="node-category" data-category="code">
+                        <div class="category-header">
+                            <h4><i class="fas fa-code"></i> 代码节点</h4>
+                            <button class="category-toggle" data-target="code-nodes">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </div>
+                        <div class="category-content" id="code-nodes">
+                            <div class="node-item" data-type="javascript-code">
+                                <i class="fab fa-js-square"></i>
+                                <span>JavaScript代码</span>
+                            </div>
+                            <div class="node-item" data-type="python-code">
+                                <i class="fab fa-python"></i>
+                                <span>Python代码</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="node-category" data-category="mcp">
+                        <div class="category-header">
+                            <h4><i class="fas fa-plug"></i> MCP服务</h4>
+                            <button class="category-toggle" data-target="mcp-nodes">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </div>
+                        <div class="category-content" id="mcp-nodes">
+                            <div class="node-item" data-type="mcp-client">
+                                <i class="fas fa-plug"></i>
+                                <span>MCP客户端</span>
+                            </div>
+                            <div class="node-item" data-type="mcp-tool">
+                                <i class="fas fa-tools"></i>
+                                <span>MCP工具调用</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="node-category" data-category="api">
+                        <div class="category-header">
+                            <h4><i class="fas fa-cloud"></i> API服务</h4>
+                            <button class="category-toggle" data-target="api-nodes">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </div>
+                        <div class="category-content" id="api-nodes">
+                            <div class="node-item" data-type="rest-api">
+                                <i class="fas fa-cloud"></i>
+                                <span>REST API</span>
+                            </div>
+                            <div class="node-item" data-type="webhook">
+                                <i class="fas fa-satellite-dish"></i>
+                                <span>Webhook接收器</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="node-category" data-category="iot">
+                        <div class="category-header">
+                            <h4><i class="fas fa-microchip"></i> IoT设备</h4>
+                            <button class="category-toggle" data-target="iot-nodes">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </div>
+                        <div class="category-content" id="iot-nodes">
+                            <div class="node-item" data-type="mqtt-client">
+                                <i class="fas fa-broadcast-tower"></i>
+                                <span>MQTT客户端</span>
+                            </div>
+                            <div class="node-item" data-type="modbus-client">
+                                <i class="fas fa-industry"></i>
+                                <span>Modbus客户端</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-resizer" data-target="leftSidebar"></div>
+        </aside>
+
+        <!-- 主工作区 -->
+        <main class="workspace">
+            <div class="canvas-container">
+                <canvas id="workflowCanvas" width="2000" height="1500"></canvas>
+                <svg id="connectionSvg" class="connection-layer">
+                    <!-- 连接线将在这里绘制 -->
+                </svg>
+                <div id="nodeContainer" class="node-container">
+                    <!-- 节点将在这里创建 -->
+                </div>
+            </div>
+
+            <!-- 执行状态显示 -->
+            <div id="executionStatus" class="execution-status hidden">
+                <div class="status-header">
+                    <h4><i class="fas fa-running"></i> 执行状态</h4>
+                    <button id="closeStatus" class="btn-close">&times;</button>
+                </div>
+                <div id="statusContent" class="status-content"></div>
+            </div>
+        </main>
+
+        <!-- 右侧属性面板 -->
+        <aside class="sidebar right-sidebar" id="rightSidebar">
+            <div class="sidebar-resizer" data-target="rightSidebar"></div>
+            <div class="sidebar-content">
+                <div class="sidebar-header">
+                    <h3><i class="fas fa-cogs"></i> 属性面板</h3>
+                </div>
+                <div id="propertyPanel" class="property-panel">
+                    <div class="no-selection">
+                        <i class="fas fa-mouse-pointer"></i>
+                        <p>选择一个节点来编辑属性</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- API配置模态框 -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-cog"></i> API配置</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="apiConfigForm">
+                    <div class="form-group">
+                        <label for="apiUrl">API地址:</label>
+                        <input type="url" id="apiUrl" name="apiUrl" required
+                            placeholder="https://api.openai.com/v1/chat/completions">
+                    </div>
+                    <div class="form-group">
+                        <label for="apiKey">API密钥:</label>
+                        <input type="password" id="apiKey" name="apiKey" required placeholder="sk-...">
+                    </div>
+                    <div class="form-group">
+                        <label for="defaultModel">默认模型:</label>
+                        <input type="text" id="defaultModel" name="defaultModel" placeholder="gpt-3.5-turbo">
+                    </div>
+                    <div class="form-group">
+                        <label for="maxTokens">最大Token数:</label>
+                        <input type="number" id="maxTokens" name="maxTokens" placeholder="2048" min="1" max="4096">
+                    </div>
+                    <div class="form-group">
+                        <label for="temperature">Temperature:</label>
+                        <input type="number" id="temperature" name="temperature" placeholder="0.7" min="0" max="2"
+                            step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label for="nodeDefaultWidth">节点默认宽度:</label>
+                        <input type="range" id="nodeDefaultWidth" name="nodeDefaultWidth" min="120" max="300" step="10"
+                            value="180">
+                        <span class="range-value" id="nodeWidthValue">180px</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="nodeDefaultHeight">节点默认高度:</label>
+                        <input type="range" id="nodeDefaultHeight" name="nodeDefaultHeight" min="60" max="150" step="10"
+                            value="80">
+                        <span class="range-value" id="nodeHeightValue">80px</span>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="autoExpandResults" name="autoExpandResults">
+                            成功执行时自动展开结果区域
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelSettings">取消</button>
+                <button type="button" class="btn btn-primary" id="saveSettings">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 存储管理弹窗 -->
+    <div id="variablesModal" class="modal hidden">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-database"></i> 全局存储管理</h3>
+                <span class="modal-close" id="closeVariables">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="variables-toolbar">
+                    <div class="toolbar-left">
+                        <button type="button" class="btn btn-success" id="addGlobalVariableInModal">
+                            <i class="fas fa-plus"></i> 新建变量
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="importVariables">
+                            <i class="fas fa-upload"></i> 导入存储
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="exportVariables">
+                            <i class="fas fa-download"></i> 导出存储
+                        </button>
+                        <button type="button" class="btn btn-warning" id="storageStatsBtn">
+                            <i class="fas fa-chart-bar"></i> 存储统计
+                        </button>
+                    </div>
+                    <div class="toolbar-right">
+                        <label for="storageSearchInput"></label><input type="text" id="storageSearchInput"
+                            class="form-control" placeholder="搜索存储项..." style="width: 150px; margin-right: 10px;">
+                        <label for="variableTypeFilter"></label><select id="variableTypeFilter" class="form-control">
+                            <option value="">全部类型</option>
+                            <option value="string">字符串</option>
+                            <option value="number">数字</option>
+                            <option value="boolean">布尔值</option>
+                            <option value="object">对象</option>
+                            <option value="array">数组</option>
+                            <option value="image">图片</option>
+                            <option value="audio">音频</option>
+                            <option value="video">视频</option>
+                            <option value="document">文档</option>
+                            <option value="largeText">大文本</option>
+                        </select>
+                        <button type="button" class="btn btn-danger" id="clearAllVariables">
+                            <i class="fas fa-trash-alt"></i> 全部清空
+                        </button>
+                    </div>
+                </div>
+                <div class="storage-stats" id="storageStatsPanel" style="display: none;">
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <i class="fas fa-database"></i>
+                            <div class="stat-info">
+                                <span class="stat-label">总存储项</span>
+                                <span class="stat-value" id="totalItems">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-memory"></i>
+                            <div class="stat-info">
+                                <span class="stat-label">内存使用</span>
+                                <span class="stat-value" id="memoryUsage">0 KB</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-hdd"></i>
+                            <div class="stat-info">
+                                <span class="stat-label">磁盘使用</span>
+                                <span class="stat-value" id="diskUsage">0 KB</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-images"></i>
+                            <div class="stat-info">
+                                <span class="stat-label">多媒体文件</span>
+                                <span class="stat-value" id="mediaFiles">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="variables-list" id="variablesModalList">
+                    <!-- 存储项列表将在这里动态生成 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelVariables">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 预设模板弹窗 -->
+    <div id="presetsModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-layer-group"></i> 预设工作流模板</h3>
+                <span class="modal-close" id="closePresets">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="presets-list" id="presetsList">
+                    <!-- 预设模板列表将在这里动态生成 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelPresets">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 上下文菜单 -->
+    <div id="contextMenu" class="context-menu hidden">
+        <div class="context-item" data-action="viewCode">
+            <i class="fas fa-eye"></i> 查看代码/配置
+        </div>
+        <div class="context-item" data-action="copy">
+            <i class="fas fa-copy"></i> 复制
+        </div>
+        <div class="context-item" data-action="paste">
+            <i class="fas fa-paste"></i> 粘贴
+        </div>
+        <div class="context-item" data-action="clearInputConnections">
+            <i class="fas fa-unlink"></i> 清除输入连接
+        </div>
+        <div class="context-item" data-action="clearOutputConnections">
+            <i class="fas fa-unlink"></i> 清除输出连接
+        </div>
+        <div class="context-item" data-action="delete">
+            <i class="fas fa-trash"></i> 删除
+        </div>
+    </div>
+
+    <!-- 加载脚本 -->
+    <!-- 新的API管理系统 -->
+
+    <script src="js/resource-loader.js"></script>
+
+    <!-- 原有脚本（向后兼容） -->
+    <script src="js/ui-framework.js"></script>
+    <script src="js/network-client.js"></script>
+    <script src="js/health-checker.js"></script>
+    <script src="js/performance-monitor.js"></script>
+    <script src="js/model-adapter.js"></script>
+    <script src="js/metrics-collector.js"></script>
+
+    <!-- 交互节点基类（需要在 nodes.js 之后加载） -->
+    <script src="js/debug-console.js"></script>
+
+    <!-- 代码编辑器模块 -->
+    <script src="js/component-registry.js"></script>
+    <script src="js/router-system.js"></script>
+    <script src="js/utility-functions.js"></script>
+    <script src="js/analytics-reporter.js"></script>
+
+    <!-- 浏览器模块 -->
+    <script src="js/view-controller.js"></script>
+    <script src="js/error-tracker.js"></script>
+    <script src="js/state-manager.js"></script>
+    <script src="js/event-handler.js"></script>
+
+    <script src="js/module-manager.js"></script>
+    <script src="js/data-processor.js"></script>
+    <script src="js/cache-manager.js"></script> <!-- 流处理模块 -->
+    <script src="js/core-engine.js"></script>
+
+    <!-- 智能体模块 -->
+    <script src="js/config-loader.js"></script>
+    <script src="js/session-handler.js"></script>
+    <script src="js/template-engine.js"></script>
+    <script src="js/security-layer.js"></script>
+
+    <!-- 媒体处理模块 -->
+    <script src="js/service-worker.js"></script>
+
+    <script src="js/runtime-base.js"></script>
+</body>
+
+</html>
