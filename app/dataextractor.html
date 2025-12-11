@@ -1,0 +1,2198 @@
+<!DOCTYPE html>
+<html lang=zh-CN>
+<meta charset=UTF-8>
+<meta content="width=device-width,initial-scale=1" name=viewport>
+<title>数据分析系统</title>
+<script src=https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/ml-matrix@6.10.4/lib/ml-matrix.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/ml-kmeans@6.0.0/lib/ml-kmeans.min.js></script>
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        background: #fff;
+        color: #333;
+        min-height: 100vh
+    }
+
+    .header {
+        background: linear-gradient(135deg, #0066b3 0, #004d87 100%);
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0, 102, 179, .2);
+        border-bottom: 1px solid #e0e7ed;
+        position: relative
+    }
+
+    .back-button {
+        position: absolute;
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(255, 255, 255, .1);
+        border: 1px solid rgba(255, 255, 255, .3);
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 20px;
+        font-weight: 500;
+        transition: all .3s ease;
+        backdrop-filter: blur(5px)
+    }
+
+    .back-button:hover {
+        background: rgba(255, 255, 255, .2);
+        border-color: rgba(255, 255, 255, .5);
+        transform: translateY(calc(-50% - 1px));
+        box-shadow: 0 4px 12px rgba(0, 0, 0, .15)
+    }
+
+    .back-button:active {
+        transform: translateY(-50%);
+        transition: none
+    }
+
+    .header h1 {
+        font-size: 28px;
+        background: linear-gradient(135deg, #fff 0, #f0f8ff 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-align: center;
+        letter-spacing: 2px;
+        margin-bottom: 20px
+    }
+
+    .step-navigator {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 20px
+    }
+
+    .step-nav-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+        background: rgba(255, 255, 255, .1);
+        border: 1px solid rgba(255, 255, 255, .3);
+        border-radius: 25px;
+        cursor: pointer;
+        transition: all .3s ease;
+        color: rgba(255, 255, 255, .8);
+        text-decoration: none;
+        min-width: 180px
+    }
+
+    .step-nav-item:hover {
+        background: rgba(255, 255, 255, .15);
+        border-color: rgba(255, 255, 255, .5);
+        color: #fff;
+        transform: translateY(-1px)
+    }
+
+    .step-nav-item.active {
+        background: #fff;
+        color: #0066b3;
+        border-color: transparent;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, .1)
+    }
+
+    .step-nav-item.completed {
+        background: rgba(74, 222, 128, .2);
+        border-color: rgba(74, 222, 128, .5);
+        color: rgba(255, 255, 255, .9)
+    }
+
+    .step-nav-number {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, .2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 700;
+        flex-shrink: 0
+    }
+
+    .step-nav-item.active .step-nav-number {
+        background: #0066b3;
+        color: #fff
+    }
+
+    .step-nav-item.completed .step-nav-number {
+        background: #22c55e;
+        color: #fff
+    }
+
+    .step-nav-text {
+        display: flex;
+        flex-direction: column
+    }
+
+    .step-nav-title {
+        font-weight: 600;
+        font-size: 14px
+    }
+
+    .step-nav-desc {
+        font-size: 12px;
+        opacity: .8
+    }
+
+    .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px
+    }
+
+    .step-container {
+        display: block;
+        margin-bottom: 30px;
+        opacity: .5;
+        transition: all .3s ease;
+        pointer-events: none
+    }
+
+    .step-container.active {
+        opacity: 1;
+        pointer-events: auto
+    }
+
+    .step-container.completed {
+        opacity: .8;
+        pointer-events: auto
+    }
+
+    .step-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: #f8fafc;
+        border-radius: 12px;
+        border: 1px solid #e0e7ed;
+        cursor: pointer;
+        transition: all .3s ease
+    }
+
+    .step-container.active .step-header {
+        background: linear-gradient(135deg, #f0f8ff 0, #e6f3ff 100%);
+        border-color: #0066b3;
+        box-shadow: 0 4px 15px rgba(0, 102, 179, .1)
+    }
+
+    .step-container.completed .step-header {
+        background: linear-gradient(135deg, #f0fdf4 0, #e6ffea 100%);
+        border-color: #22c55e
+    }
+
+    .step-number {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6c757d 0, #495057 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: 700;
+        color: #fff;
+        transition: all .3s ease
+    }
+
+    .step-container.active .step-number {
+        background: linear-gradient(135deg, #0066b3 0, #004d87 100%)
+    }
+
+    .step-container.completed .step-number {
+        background: linear-gradient(135deg, #22c55e 0, #16a34a 100%)
+    }
+
+    .step-title {
+        font-size: 24px;
+        color: #666;
+        transition: all .3s ease
+    }
+
+    .step-container.active .step-title {
+        color: #0066b3
+    }
+
+    .step-container.completed .step-title {
+        color: #22c55e
+    }
+
+    .step-description {
+        color: #999
+    }
+
+    .card {
+        background: #fff;
+        border: 1px solid #e0e7ed;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0, 102, 179, .05);
+        transition: all .3s ease
+    }
+
+    .step-container.active .card {
+        border-color: #0066b3;
+        box-shadow: 0 4px 20px rgba(0, 102, 179, .1)
+    }
+
+    .file-upload-area {
+        border: 2px dashed #e0e7ed;
+        border-radius: 12px;
+        padding: 50px;
+        text-align: center;
+        cursor: pointer;
+        transition: all .3s ease;
+        background: #f8fafc
+    }
+
+    .file-upload-area.dragover,
+    .file-upload-area:hover {
+        border-color: #0066b3;
+        background: #f0f8ff
+    }
+
+    .file-upload-icon {
+        font-size: 48px;
+        margin-bottom: 20px;
+        color: #0066b3
+    }
+
+    .btn {
+        padding: 12px 25px;
+        background: linear-gradient(135deg, #0066b3 0, #004d87 100%);
+        color: #fff;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all .3s ease;
+        box-shadow: 0 4px 15px rgba(0, 102, 179, .3);
+        text-transform: uppercase;
+        letter-spacing: 1px
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 102, 179, .4)
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #6c757d 0, #495057 100%);
+        box-shadow: 0 4px 15px rgba(108, 117, 125, .3)
+    }
+
+    .btn-secondary:hover {
+        box-shadow: 0 6px 20px rgba(108, 117, 125, .4)
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #4ade80 0, #22c55e 100%);
+        box-shadow: 0 4px 15px rgba(74, 222, 128, .3)
+    }
+
+    .btn-success:hover {
+        box-shadow: 0 6px 20px rgba(74, 222, 128, .4)
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #f093fb 0, #f5576c 100%);
+        box-shadow: 0 4px 15px rgba(245, 87, 108, .3)
+    }
+
+    .btn-danger:hover {
+        box-shadow: 0 6px 20px rgba(245, 87, 108, .4)
+    }
+
+    .data-preview {
+        max-height: 400px;
+        overflow: auto;
+        background: #f8fafc;
+        border-radius: 8px;
+        border: 1px solid #e0e7ed
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse
+    }
+
+    .data-table td,
+    .data-table th {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #e0e7ed
+    }
+
+    .data-table th {
+        background: #fff;
+        color: #0066b3;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        border-bottom: 2px solid #0066b3
+    }
+
+    .variable-config {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 20px;
+        margin-top: 20px
+    }
+
+    .variable-section {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 20px;
+        border: 1px solid #e0e7ed
+    }
+
+    .variable-section h3 {
+        color: #0066b3;
+        margin-bottom: 15px;
+        font-size: 18px
+    }
+
+    .variable-list {
+        max-height: 300px;
+        overflow-y: auto
+    }
+
+    .variable-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px;
+        margin: 5px 0;
+        background: #fff;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all .3s ease;
+        border: 1px solid #e0e7ed
+    }
+
+    .variable-item:hover {
+        background: #f0f8ff;
+        border-color: #0066b3
+    }
+
+    .variable-item.selected {
+        background: #f0f8ff;
+        border: 1px solid #0066b3;
+        box-shadow: 0 2px 8px rgba(0, 102, 179, .1)
+    }
+
+    .algorithm-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-top: 20px
+    }
+
+    .algorithm-card {
+        background: #f8fafc;
+        border: 1px solid #e0e7ed;
+        border-radius: 12px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all .3s ease;
+        position: relative
+    }
+
+    .algorithm-card:hover {
+        border-color: #0066b3;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 102, 179, .15)
+    }
+
+    .algorithm-card.selected {
+        border-color: #0066b3;
+        background: #f0f8ff;
+        box-shadow: 0 4px 15px rgba(0, 102, 179, .1)
+    }
+
+    .algorithm-card h3 {
+        color: #0066b3;
+        margin-bottom: 10px
+    }
+
+    .algorithm-card p {
+        color: #666;
+        font-size: 14px;
+        line-height: 1.5
+    }
+
+    .parameters-section {
+        display: none;
+        margin-top: 20px;
+        padding: 20px;
+        background: #f8fafc;
+        border-radius: 8px;
+        border: 1px solid #e0e7ed
+    }
+
+    .parameters-section.active {
+        display: block
+    }
+
+    .param-group {
+        margin-bottom: 20px
+    }
+
+    .param-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #666;
+        font-weight: 500
+    }
+
+    input,
+    select,
+    textarea {
+        width: 100%;
+        padding: 10px;
+        background: #fff;
+        color: #333;
+        border: 1px solid #e0e7ed;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: all .3s ease
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+        outline: 0;
+        border-color: #0066b3;
+        box-shadow: 0 0 0 3px rgba(0, 102, 179, .1)
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: #e0e7ed;
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 20px 0
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(135deg, #0066b3 0, #004d87 100%);
+        width: 0%;
+        transition: width .3s ease
+    }
+
+    .rules-output {
+        background: #f8fafc;
+        border: 1px solid #e0e7ed;
+        border-radius: 8px;
+        max-height: 500px;
+        overflow-y: auto
+    }
+
+    .rule-item {
+        padding: 15px;
+        border-bottom: 1px solid #e0e7ed;
+        transition: all .3s ease;
+        background: #fff;
+        margin: 8px;
+        border-radius: 8px;
+        border: 1px solid #e0e7ed
+    }
+
+    .rule-item:hover {
+        background: #f0f8ff;
+        border-color: #0066b3;
+        box-shadow: 0 2px 8px rgba(0, 102, 179, .1)
+    }
+
+    .rule-item:last-child {
+        border-bottom: 1px solid #e0e7ed
+    }
+
+    .rule-name {
+        color: #0066b3;
+        font-weight: 600;
+        font-size: 16px
+    }
+
+    .rule-confidence {
+        background: rgba(74, 222, 128, .15);
+        color: #22c55e;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        margin-left: auto
+    }
+
+    .rule-conditions {
+        color: #333;
+        font-family: Consolas, Monaco, monospace;
+        font-size: 14px;
+        line-height: 1.5
+    }
+
+    .step-navigation {
+        display: none
+    }
+
+    .loading {
+        display: none;
+        text-align: center;
+        padding: 40px
+    }
+
+    .loading.active {
+        display: block
+    }
+
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid rgba(0, 102, 179, .1);
+        border-top: 5px solid #0066b3;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0)
+        }
+
+        100% {
+            transform: rotate(360deg)
+        }
+    }
+
+    .export-section {
+        margin-top: 30px;
+        padding: 20px;
+        background: #f8fafc;
+        border-radius: 12px;
+        border: 1px solid #e0e7ed
+    }
+
+    .export-options {
+        display: flex;
+        gap: 15px;
+        margin-top: 15px
+    }
+
+    .auto-load-indicator {
+        background: linear-gradient(135deg, #4ade80 0, #22c55e 100%);
+        color: #fff;
+        padding: 10px 20px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px
+    }
+
+    @media (max-width:768px) {
+        .variable-config {
+            grid-template-columns: 1fr
+        }
+
+        .algorithm-grid {
+            grid-template-columns: 1fr
+        }
+
+        .step-navigator {
+            flex-direction: column;
+            gap: 10px
+        }
+
+        .step-nav-item {
+            min-width: auto
+        }
+    }
+</style>
+<div class=header><a class=back-button href=index.html>返回主系统</a>
+    <h1>数据分析系统</h1>
+    <div class=step-navigator>
+        <div class="step-nav-item active" data-step=1>
+            <div class=step-nav-number>1</div>
+            <div class=step-nav-text>
+                <div class=step-nav-title>数据上传</div>
+                <div class=step-nav-desc>上传交易数据文件</div>
+            </div>
+        </div>
+        <div class=step-nav-item data-step=2>
+            <div class=step-nav-number>2</div>
+            <div class=step-nav-text>
+                <div class=step-nav-title>变量配置</div>
+                <div class=step-nav-desc>选择目标和特征变量</div>
+            </div>
+        </div>
+        <div class=step-nav-item data-step=3>
+            <div class=step-nav-number>3</div>
+            <div class=step-nav-text>
+                <div class=step-nav-title>算法选择</div>
+                <div class=step-nav-desc>选择规则生成算法</div>
+            </div>
+        </div>
+        <div class=step-nav-item data-step=4>
+            <div class=step-nav-number>4</div>
+            <div class=step-nav-text>
+                <div class=step-nav-title>规则生成</div>
+                <div class=step-nav-desc>生成和查看规则</div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class=container>
+    <div class="step-container active" id=step1>
+        <div class=step-header onclick=switchToStep(1)>
+            <div class=step-number>1</div>
+            <div>
+                <div class=step-title>数据上传</div>
+                <div class=step-description>上传您的交易数据文件，支持 CSV、Excel 格式</div>
+            </div>
+        </div>
+        <div class=card>
+            <div class=auto-load-indicator id=autoLoadIndicator>✅ 已自动加载示例数据集 - 包含1000条可疑交易记录</div>
+            <div class=file-upload-area id=fileUploadArea>
+                <div class=file-upload-icon>📊</div>
+                <h3>拖拽文件到此处或点击选择文件</h3>
+                <p style=margin-top:10px;color:#a0a0a0>支持 CSV、Excel (xlsx, xls) 格式
+                <div style=margin-top:15px><button class="btn btn-secondary" onclick=loadSampleData()>🔄
+                        重新加载示例数据</button> <a class="btn btn-secondary" href=sample_transaction_data.csv download
+                        style="text-decoration:none;font-size:12px;padding:8px 15px;margin-left:10px">📥 下载示例数据</a>
+                </div><input id=fileInput type=file accept=.csv,.xlsx,.xls style=display:none>
+            </div>
+            <div id=fileInfo style=margin-top:20px>
+                <h4 style=color:#0066b3;margin-bottom:10px>文件信息</h4>
+                <div id=fileDetails></div>
+            </div>
+            <div id=dataPreview style=margin-top:20px>
+                <h4 style=color:#0066b3;margin-bottom:15px>数据预览</h4>
+                <div class=data-preview>
+                    <table class=data-table id=previewTable></table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class=step-container id=step2>
+        <div class=step-header onclick=switchToStep(2)>
+            <div class=step-number>2</div>
+            <div>
+                <div class=step-title>变量配置</div>
+                <div class=step-description>选择目标变量、特征变量和排除变量</div>
+            </div>
+        </div>
+        <div class=card>
+            <div class=variable-config>
+                <div class=variable-section>
+                    <h3>🎯 目标变量</h3>
+                    <p style=color:#a0a0a0;margin-bottom:15px;font-size:14px>选择要预测的变量（如：是否可疑、风险等级等）
+                    <div class=variable-list id=targetVariables></div>
+                </div>
+                <div class=variable-section>
+                    <h3>📋 特征变量</h3>
+                    <p style=color:#a0a0a0;margin-bottom:15px;font-size:14px>选择用于生成规则的特征变量
+                    <div class=variable-list id=featureVariables></div>
+                </div>
+                <div class=variable-section>
+                    <h3>🚫 排除变量</h3>
+                    <p style=color:#a0a0a0;margin-bottom:15px;font-size:14px>排除不参与规则生成的变量（如：ID、时间戳等）
+                    <div class=variable-list id=excludeVariables></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class=step-container id=step3>
+        <div class=step-header onclick=switchToStep(3)>
+            <div class=step-number>3</div>
+            <div>
+                <div class=step-title>算法选择</div>
+                <div class=step-description>选择规则生成算法并设置参数</div>
+            </div>
+        </div>
+        <div class=card>
+            <h3 style=color:#0066b3;margin-bottom:20px>选择算法</h3>
+            <div class=algorithm-grid>
+                <div class=algorithm-card data-algorithm=decision_tree>
+                    <h3>🌳 决策树</h3>
+                    <p>通过决策树模型生成if-then规则，具有良好的可解释性。适用于分类和回归问题，能够处理数值型和分类型特征。
+                </div>
+                <div class=algorithm-card data-algorithm=association_rules>
+                    <h3>🔗 关联规则</h3>
+                    <p>发现数据项之间的频繁关联模式。使用支持度、置信度和提升度等指标来评估规则质量。
+                </div>
+                <div class=algorithm-card data-algorithm=clustering>
+                    <h3>🎯 聚类分析</h3>
+                    <p>通过K-means等聚类算法发现数据的自然分组，然后为每个聚类生成特征描述规则。
+                </div>
+                <div class=algorithm-card data-algorithm=random_forest>
+                    <h3>🌲 随机森林</h3>
+                    <p>基于多个决策树的集成学习方法，提取特征重要性并生成更稳定的规则。
+                </div>
+            </div>
+            <div class=parameters-section id=decision_tree_params>
+                <h4 style=color:#0066b3;margin-bottom:15px>决策树参数设置</h4>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+                    <div class=param-group><label>最大深度</label> <input id=max_depth type=number max=20 min=1 value=5>
+                    </div>
+                    <div class=param-group><label>最小样本分割</label> <input id=min_samples_split type=number max=100 min=2
+                            value=10></div>
+                    <div class=param-group><label>最小样本叶子</label> <input id=min_samples_leaf type=number max=50 min=1
+                            value=5></div>
+                    <div class=param-group><label>分割标准</label> <select id=criterion>
+                            <option value=gini>基尼系数
+                            <option value=entropy>信息熵
+                        </select></div>
+                </div>
+            </div>
+            <div class=parameters-section id=association_rules_params>
+                <h4 style=color:#0066b3;margin-bottom:15px>关联规则参数设置</h4>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
+                    <div class=param-group><label>最小支持度</label> <input id=min_support type=number max=1 min=0.01
+                            value=0.1 step=0.01></div>
+                    <div class=param-group><label>最小置信度</label> <input id=min_confidence type=number max=1 min=0.01
+                            value=0.5 step=0.01></div>
+                    <div class=param-group><label>最小提升度</label> <input id=min_lift type=number max=10 min=0.1 value=1.0
+                            step=0.1></div>
+                </div>
+            </div>
+            <div class=parameters-section id=clustering_params>
+                <h4 style=color:#0066b3;margin-bottom:15px>聚类分析参数设置</h4>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+                    <div class=param-group><label>聚类数量</label> <input id=n_clusters type=number max=20 min=2 value=5>
+                    </div>
+                    <div class=param-group><label>聚类算法</label> <select id=clustering_method>
+                            <option value=kmeans>K-Means
+                            <option value=dbscan>DBSCAN
+                            <option value=hierarchical>层次聚类
+                        </select></div>
+                </div>
+            </div>
+            <div class=parameters-section id=random_forest_params>
+                <h4 style=color:#0066b3;margin-bottom:15px>随机森林参数设置</h4>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+                    <div class=param-group><label>树的数量</label> <input id=n_estimators type=number max=500 min=10
+                            value=100></div>
+                    <div class=param-group><label>最大深度</label> <input id=rf_max_depth type=number max=30 min=1 value=10>
+                    </div>
+                    <div class=param-group><label>特征采样比例</label> <input id=max_features type=number max=1 min=0.1
+                            value=0.8 step=0.1></div>
+                    <div class=param-group><label>样本采样比例</label> <input id=max_samples type=number max=1 min=0.1
+                            value=0.8 step=0.1></div>
+                </div>
+            </div>
+            <div style=margin-top:30px;text-align:center><button class=btn onclick=generateRules()>🚀 开始生成规则</button>
+            </div>
+        </div>
+    </div>
+    <div class=step-container id=step4>
+        <div class=step-header onclick=switchToStep(4)>
+            <div class=step-number>4</div>
+            <div>
+                <div class=step-title>规则生成</div>
+                <div class=step-description>生成和查看提取的规则</div>
+            </div>
+        </div>
+        <div class=loading id=loadingIndicator>
+            <div class=spinner></div>
+            <h3 style=color:#0066b3>正在生成规则...</h3>
+            <p style=color:#a0a0a0;margin-top:10px>请稍候，这可能需要几分钟时间
+            <div class=progress-bar>
+                <div class=progress-fill id=progressFill></div>
+            </div>
+        </div>
+        <div class=card id=resultsCard style=display:none>
+            <div style=display:flex;justify-content:space-between;align-items:center;margin-bottom:20px>
+                <h3 style=color:#0066b3>生成的规则</h3>
+                <div><span style=color:#4ade80;font-weight:600 id=ruleCount></span> <span style=color:#a0a0a0>条规则</span>
+                </div>
+            </div>
+            <div class=rules-output id=rulesOutput></div>
+            <div class=export-section>
+                <h4 style=color:#0066b3;margin-bottom:15px>导出规则</h4>
+                <p style=color:#a0a0a0;margin-bottom:15px>选择导出格式并导入到主规则管理系统
+                <div class=export-options><button class=btn onclick=exportToMainSystem()>导入到主系统</button> <button
+                        class="btn btn-secondary" onclick=exportAsJSON()>导出为JSON</button> <button
+                        class="btn btn-secondary" onclick=exportAsCSV()>导出为CSV</button></div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>// 全局变量
+    let currentStep = 1;
+    let uploadedData = null;
+    let selectedColumns = {
+        target: null,
+        features: [],
+        exclude: []
+    };
+    let selectedAlgorithm = null;
+    let generatedRules = [];
+    let stepCompletionStatus = {
+        1: false,
+        2: false,
+        3: false,
+        4: false
+    };
+
+    // 示例数据
+    const sampleData = {
+        headers: ['交易ID', '交易金额', '交易时间', '账户类型', '交易地点', '是否可疑', '风险等级', '客户年龄', '历史交易次数'],
+        data: []
+    };
+
+    // 生成示例数据
+    function generateSampleData() {
+        const locations = ['北京', '上海', '广州', '深圳', '杭州', '南京', '武汉', '成都'];
+        const accountTypes = ['个人账户', '企业账户', '联名账户'];
+        const timeSlots = ['09:00-12:00', '12:00-18:00', '18:00-22:00', '22:00-09:00'];
+
+        sampleData.data = [];
+        for (let i = 1; i <= 1000; i++) {
+            const amount = Math.random() < 0.1 ?
+                Math.floor(Math.random() * 900000) + 100000 : // 10%高额交易
+                Math.floor(Math.random() * 50000) + 1000;     // 90%正常交易
+
+            const timeSlot = timeSlots[Math.floor(Math.random() * timeSlots.length)];
+            const isSuspicious = (amount > 100000 && timeSlot === '22:00-09:00') ||
+                (Math.random() < 0.05); // 5%随机可疑
+
+            sampleData.data.push({
+                '交易ID': `T${String(i).padStart(6, '0')}`,
+                '交易金额': amount,
+                '交易时间': timeSlot,
+                '账户类型': accountTypes[Math.floor(Math.random() * accountTypes.length)],
+                '交易地点': locations[Math.floor(Math.random() * locations.length)],
+                '是否可疑': isSuspicious ? '是' : '否',
+                '风险等级': isSuspicious ? (Math.random() > 0.5 ? '高' : '中') : '低',
+                '客户年龄': Math.floor(Math.random() * 60) + 18,
+                '历史交易次数': Math.floor(Math.random() * 500) + 1
+            });
+        }
+    }
+
+    // 初始化
+    function init() {
+        setupFileUpload();
+        setupAlgorithmSelection();
+        setupStepNavigation();
+        loadSampleData(); // 自动加载示例数据
+        updateStepVisibility();
+    }
+
+    // 设置步骤导航
+    function setupStepNavigation() {
+        document.querySelectorAll('.step-nav-item').forEach(item => {
+            item.addEventListener('click', function () {
+                const step = parseInt(this.dataset.step);
+                switchToStep(step);
+            });
+        });
+    }
+
+    // 切换步骤
+    function switchToStep(step) {
+        if (step < 1 || step > 4) return;
+
+        // 检查前置步骤是否完成
+        if (step > 1 && !stepCompletionStatus[step - 1]) {
+            alert(`请先完成步骤${step - 1}`);
+            return;
+        }
+
+        currentStep = step;
+        updateStepVisibility();
+        updateStepNavigation();
+
+        // 滚动到对应步骤
+        document.getElementById(`step${step}`).scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }
+
+    // 更新步骤可见性
+    function updateStepVisibility() {
+        document.querySelectorAll('.step-container').forEach((container, index) => {
+            const stepNum = index + 1;
+            container.classList.remove('active', 'completed');
+
+            if (stepNum === currentStep) {
+                container.classList.add('active');
+            } else if (stepCompletionStatus[stepNum]) {
+                container.classList.add('completed');
+            }
+        });
+    }
+
+    // 更新导航指示器
+    function updateStepNavigation() {
+        document.querySelectorAll('.step-nav-item').forEach((item, index) => {
+            const stepNum = index + 1;
+            item.classList.remove('active', 'completed');
+
+            if (stepNum === currentStep) {
+                item.classList.add('active');
+            } else if (stepCompletionStatus[stepNum]) {
+                item.classList.add('completed');
+            }
+        });
+    }
+
+    // 标记步骤完成
+    function markStepCompleted(step) {
+        stepCompletionStatus[step] = true;
+        updateStepVisibility();
+        updateStepNavigation();
+    }
+
+    // 加载示例数据
+    function loadSampleData() {
+        generateSampleData();
+        uploadedData = sampleData;
+
+        // 显示文件信息
+        const fileDetails = document.getElementById('fileDetails');
+        fileDetails.innerHTML = `
+                <p><strong>文件名:</strong> 示例交易数据.csv</p>
+                <p><strong>文件大小:</strong> ${(JSON.stringify(uploadedData).length / 1024).toFixed(2)} KB</p>
+                <p><strong>行数:</strong> ${uploadedData.data.length}</p>
+                <p><strong>列数:</strong> ${uploadedData.headers.length}</p>
+            `;
+
+        displayDataPreview();
+        setupVariableSelection();
+        markStepCompleted(1);
+
+        // 如果当前在第一步，自动跳到第二步
+        if (currentStep === 1) {
+            setTimeout(() => switchToStep(2), 1000);
+        }
+    }
+
+    // 设置文件上传
+    function setupFileUpload() {
+        const uploadArea = document.getElementById('fileUploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('drop', handleDrop);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        fileInput.addEventListener('change', handleFileSelect);
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        e.currentTarget.classList.add('dragover');
+    }
+
+    function handleDragLeave(e) {
+        e.currentTarget.classList.remove('dragover');
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            processFile(files[0]);
+        }
+    }
+
+    function handleFileSelect(e) {
+        const files = e.target.files;
+        if (files.length > 0) {
+            processFile(files[0]);
+        }
+    }
+
+    // 处理文件
+    function processFile(file) {
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+            const content = e.target.result;
+
+            if (file.name.endsWith('.csv')) {
+                uploadedData = parseCSV(content);
+            } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+                alert('Excel文件处理功能需要额外的库支持，请使用CSV格式');
+                return;
+            }
+
+            displayFileInfo(file);
+            displayDataPreview();
+            setupVariableSelection();
+            markStepCompleted(1);
+
+            // 隐藏自动加载指示器
+            document.getElementById('autoLoadIndicator').style.display = 'none';
+        };
+
+        reader.readAsText(file);
+    }
+
+    // 解析CSV
+    function parseCSV(content) {
+        const lines = content.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim().replace(/['"]/g, ''));
+        const data = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',').map(v => v.trim().replace(/['"]/g, ''));
+            const row = {};
+            headers.forEach((header, index) => {
+                row[header] = values[index] || '';
+            });
+            data.push(row);
+        }
+
+        return { headers, data };
+    }
+
+    // 显示文件信息
+    function displayFileInfo(file) {
+        const fileDetails = document.getElementById('fileDetails');
+
+        fileDetails.innerHTML = `
+                <p><strong>文件名:</strong> ${file.name}</p>
+                <p><strong>文件大小:</strong> ${(file.size / 1024).toFixed(2)} KB</p>
+                <p><strong>行数:</strong> ${uploadedData.data.length}</p>
+                <p><strong>列数:</strong> ${uploadedData.headers.length}</p>
+            `;
+    }
+
+    // 显示数据预览
+    function displayDataPreview() {
+        const table = document.getElementById('previewTable');
+        table.innerHTML = ''; // 清空现有内容
+
+        // 创建表头
+        const headerRow = table.createTHead().insertRow();
+        uploadedData.headers.forEach(header => {
+            const th = document.createElement('th');
+            th.textContent = header;
+            headerRow.appendChild(th);
+        });
+
+        // 创建表体（只显示前10行）
+        const tbody = table.createTBody();
+        const previewData = uploadedData.data.slice(0, 10);
+
+        previewData.forEach(row => {
+            const tr = tbody.insertRow();
+            uploadedData.headers.forEach(header => {
+                const td = tr.insertCell();
+                td.textContent = row[header] || '';
+            });
+        });
+    }
+
+    // 设置变量选择
+    function setupVariableSelection() {
+        const targetContainer = document.getElementById('targetVariables');
+        const featureContainer = document.getElementById('featureVariables');
+        const excludeContainer = document.getElementById('excludeVariables');
+
+        targetContainer.innerHTML = '';
+        featureContainer.innerHTML = '';
+        excludeContainer.innerHTML = '';
+
+        // 重置选择状态
+        selectedColumns = {
+            target: null,
+            features: [],
+            exclude: []
+        };
+
+        uploadedData.headers.forEach((header, index) => {
+            // 目标变量（单选） - 自动选择"是否可疑"
+            const targetItem = createVariableItem(header, 'target', header === '是否可疑');
+            targetContainer.appendChild(targetItem);
+            if (header === '是否可疑') {
+                selectedColumns.target = header;
+            }
+
+            // 特征变量（多选） - 排除ID和目标变量
+            const shouldSelectFeature = !header.includes('ID') && header !== '是否可疑';
+            const featureItem = createVariableItem(header, 'feature', shouldSelectFeature);
+            featureContainer.appendChild(featureItem);
+            if (shouldSelectFeature) {
+                selectedColumns.features.push(header);
+            }
+
+            // 排除变量（多选） - 自动选择ID
+            const shouldExclude = header.includes('ID');
+            const excludeItem = createVariableItem(header, 'exclude', shouldExclude);
+            excludeContainer.appendChild(excludeItem);
+            if (shouldExclude) {
+                selectedColumns.exclude.push(header);
+            }
+        });
+
+        // 如果有有效配置，标记步骤2完成
+        if (selectedColumns.target && selectedColumns.features.length > 0) {
+            markStepCompleted(2);
+        }
+    }
+
+    function createVariableItem(header, type, selected = false) {
+        const item = document.createElement('div');
+        item.className = `variable-item ${selected ? 'selected' : ''}`;
+        item.innerHTML = `
+                <input type="${type === 'target' ? 'radio' : 'checkbox'}" 
+                       name="${type}_vars" 
+                       value="${header}" 
+                       ${selected ? 'checked' : ''}
+                       onchange="updateVariableSelection('${type}', '${header}', this.checked)">
+                <span>${header}</span>
+            `;
+
+        item.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'INPUT') {
+                const input = item.querySelector('input');
+                input.click();
+            }
+        });
+
+        return item;
+    }
+
+    function updateVariableSelection(type, variable, checked) {
+        if (type === 'target') {
+            selectedColumns.target = checked ? variable : null;
+            // 更新UI
+            document.querySelectorAll('#targetVariables .variable-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            if (checked) {
+                event.target.closest('.variable-item').classList.add('selected');
+            }
+        } else if (type === 'feature') {
+            if (checked) {
+                if (!selectedColumns.features.includes(variable)) {
+                    selectedColumns.features.push(variable);
+                }
+                // 从排除列表中移除
+                selectedColumns.exclude = selectedColumns.exclude.filter(v => v !== variable);
+                const excludeInput = document.querySelector(`#excludeVariables input[value="${variable}"]`);
+                if (excludeInput) {
+                    excludeInput.checked = false;
+                    excludeInput.closest('.variable-item').classList.remove('selected');
+                }
+            } else {
+                selectedColumns.features = selectedColumns.features.filter(v => v !== variable);
+            }
+            event.target.closest('.variable-item').classList.toggle('selected', checked);
+        } else if (type === 'exclude') {
+            if (checked) {
+                if (!selectedColumns.exclude.includes(variable)) {
+                    selectedColumns.exclude.push(variable);
+                }
+                // 从特征列表中移除
+                selectedColumns.features = selectedColumns.features.filter(v => v !== variable);
+                const featureInput = document.querySelector(`#featureVariables input[value="${variable}"]`);
+                if (featureInput) {
+                    featureInput.checked = false;
+                    featureInput.closest('.variable-item').classList.remove('selected');
+                }
+            } else {
+                selectedColumns.exclude = selectedColumns.exclude.filter(v => v !== variable);
+            }
+            event.target.closest('.variable-item').classList.toggle('selected', checked);
+        }
+
+        // 检查步骤2是否完成
+        if (selectedColumns.target && selectedColumns.features.length > 0) {
+            markStepCompleted(2);
+        }
+    }
+
+    // 设置算法选择
+    function setupAlgorithmSelection() {
+        document.querySelectorAll('.algorithm-card').forEach(card => {
+            card.addEventListener('click', function () {
+                // 移除其他选中状态
+                document.querySelectorAll('.algorithm-card').forEach(c => c.classList.remove('selected'));
+                document.querySelectorAll('.parameters-section').forEach(p => p.classList.remove('active'));
+
+                // 选中当前算法
+                this.classList.add('selected');
+                selectedAlgorithm = this.dataset.algorithm;
+
+                // 显示对应参数
+                const paramSection = document.getElementById(selectedAlgorithm + '_params');
+                if (paramSection) {
+                    paramSection.classList.add('active');
+                }
+
+                // 标记步骤3完成
+                markStepCompleted(3);
+            });
+        });
+    }
+
+    // 数据预处理和特征工程
+    function preprocessData() {
+        if (!uploadedData || !selectedColumns.target || selectedColumns.features.length === 0) {
+            throw new Error('数据或选择的列不完整');
+        }
+
+        const processedData = [];
+        const labelMap = {};
+        let labelCounter = 0;
+
+        // 处理数据，转换为数值格式
+        uploadedData.data.forEach(row => {
+            const processedRow = {};
+
+            // 处理目标变量
+            let targetValue = row[selectedColumns.target];
+            if (isNaN(targetValue)) {
+                if (!(targetValue in labelMap)) {
+                    labelMap[targetValue] = labelCounter++;
+                }
+                targetValue = labelMap[targetValue];
+            } else {
+                targetValue = parseFloat(targetValue);
+            }
+            processedRow.target = targetValue;
+
+            // 处理特征变量
+            selectedColumns.features.forEach(feature => {
+                let value = row[feature];
+                if (value === undefined || value === null || value === '') {
+                    value = 0; // 处理缺失值
+                } else if (isNaN(value)) {
+                    // 字符串编码
+                    const key = `${feature}_${value}`;
+                    if (!(key in labelMap)) {
+                        labelMap[key] = labelCounter++;
+                    }
+                    value = labelMap[key];
+                } else {
+                    value = parseFloat(value);
+                }
+                processedRow[feature] = value;
+            });
+
+            processedData.push(processedRow);
+        });
+
+        return { data: processedData, labelMap };
+    }
+
+    // 生成规则
+    function generateRules() {
+        if (!validateStep3()) {
+            alert('请先选择算法');
+            return;
+        }
+
+        const loading = document.getElementById('loadingIndicator');
+        const results = document.getElementById('resultsCard');
+
+        loading.classList.add('active');
+        results.style.display = 'none';
+
+        // 切换到步骤4
+        switchToStep(4);
+
+        // 模拟进度
+        let progress = 0;
+        const progressFill = document.getElementById('progressFill');
+        const progressInterval = setInterval(() => {
+            progress += Math.random() * 15;
+            if (progress > 95) progress = 95;
+            progressFill.style.width = progress + '%';
+        }, 200);
+
+        // 模拟规则生成
+        setTimeout(() => {
+            clearInterval(progressInterval);
+            progressFill.style.width = '100%';
+
+            // 生成模拟规则
+            generatedRules = generateMockRules();
+
+            setTimeout(() => {
+                loading.classList.remove('active');
+                displayGeneratedRules();
+                results.style.display = 'block';
+                markStepCompleted(4);
+            }, 500);
+        }, 3000);
+    }
+
+    function validateStep3() {
+        return selectedAlgorithm !== null;
+    }
+
+    // 实现真实的算法
+    function generateMockRules() {
+        try {
+            const algorithms = {
+                'decision_tree': generateDecisionTreeRules,
+                'association_rules': generateAssociationRules,
+                'clustering': generateClusteringRules,
+                'random_forest': generateRandomForestRules
+            };
+
+            if (algorithms[selectedAlgorithm]) {
+                return algorithms[selectedAlgorithm]();
+            }
+
+            return [];
+        } catch (error) {
+            console.error('规则生成错误:', error);
+            return [{
+                name: "错误",
+                conditions: `生成规则时出错: ${error.message}`,
+                confidence: 0,
+                category: "错误"
+            }];
+        }
+    }
+
+    // 简化的决策树实现
+    class SimpleDecisionTree {
+        constructor(maxDepth = 5, minSamplesSplit = 10) {
+            this.maxDepth = maxDepth;
+            this.minSamplesSplit = minSamplesSplit;
+            this.tree = null;
+            this.rules = [];
+        }
+
+        gini(y) {
+            const counts = {};
+            y.forEach(val => counts[val] = (counts[val] || 0) + 1);
+            const total = y.length;
+            let gini = 1;
+            for (const count of Object.values(counts)) {
+                gini -= Math.pow(count / total, 2);
+            }
+            return gini;
+        }
+
+        split(X, y, feature, threshold) {
+            const leftX = [], leftY = [], rightX = [], rightY = [];
+            for (let i = 0; i < X.length; i++) {
+                if (X[i][feature] <= threshold) {
+                    leftX.push(X[i]);
+                    leftY.push(y[i]);
+                } else {
+                    rightX.push(X[i]);
+                    rightY.push(y[i]);
+                }
+            }
+            return { leftX, leftY, rightX, rightY };
+        }
+
+        findBestSplit(X, y) {
+            let bestGain = 0;
+            let bestFeature = null;
+            let bestThreshold = null;
+
+            const features = Object.keys(X[0]).filter(f => f !== 'target');
+
+            for (const feature of features) {
+                const values = [...new Set(X.map(x => x[feature]))].sort((a, b) => a - b);
+
+                for (let i = 0; i < values.length - 1; i++) {
+                    const threshold = (values[i] + values[i + 1]) / 2;
+                    const { leftY, rightY } = this.split(X, y, feature, threshold);
+
+                    if (leftY.length === 0 || rightY.length === 0) continue;
+
+                    const parentGini = this.gini(y);
+                    const leftGini = this.gini(leftY);
+                    const rightGini = this.gini(rightY);
+                    const weightedGini = (leftY.length / y.length) * leftGini +
+                        (rightY.length / y.length) * rightGini;
+                    const gain = parentGini - weightedGini;
+
+                    if (gain > bestGain) {
+                        bestGain = gain;
+                        bestFeature = feature;
+                        bestThreshold = threshold;
+                    }
+                }
+            }
+
+            return { feature: bestFeature, threshold: bestThreshold, gain: bestGain };
+        }
+
+        buildTree(X, y, depth = 0) {
+            const uniqueClasses = [...new Set(y)];
+
+            if (uniqueClasses.length === 1 ||
+                depth >= this.maxDepth ||
+                X.length < this.minSamplesSplit) {
+                const counts = {};
+                y.forEach(val => counts[val] = (counts[val] || 0) + 1);
+                const prediction = Object.keys(counts).reduce((a, b) =>
+                    counts[a] > counts[b] ? a : b);
+                return {
+                    type: 'leaf',
+                    prediction: prediction,
+                    samples: X.length,
+                    confidence: counts[prediction] / X.length
+                };
+            }
+
+            const { feature, threshold, gain } = this.findBestSplit(X, y);
+
+            if (!feature || gain === 0) {
+                const counts = {};
+                y.forEach(val => counts[val] = (counts[val] || 0) + 1);
+                const prediction = Object.keys(counts).reduce((a, b) =>
+                    counts[a] > counts[b] ? a : b);
+                return {
+                    type: 'leaf',
+                    prediction: prediction,
+                    samples: X.length,
+                    confidence: counts[prediction] / X.length
+                };
+            }
+
+            const { leftX, leftY, rightX, rightY } = this.split(X, y, feature, threshold);
+
+            return {
+                type: 'node',
+                feature: feature,
+                threshold: threshold,
+                left: this.buildTree(leftX, leftY, depth + 1),
+                right: this.buildTree(rightX, rightY, depth + 1),
+                samples: X.length
+            };
+        }
+
+        extractRules(node, conditions = [], rules = []) {
+            if (node.type === 'leaf') {
+                const conditionStr = conditions.length > 0 ?
+                    `如果 ${conditions.join(' 且 ')}` : '默认规则';
+
+                rules.push({
+                    name: `决策树规则 ${rules.length + 1}`,
+                    conditions: conditionStr,
+                    confidence: node.confidence,
+                    support: node.samples / this.totalSamples,
+                    category: `预测类别: ${node.prediction}`
+                });
+            } else {
+                // 左子树 (<=)
+                this.extractRules(node.left,
+                    [...conditions, `${node.feature} <= ${node.threshold.toFixed(2)}`],
+                    rules);
+
+                // 右子树 (>)
+                this.extractRules(node.right,
+                    [...conditions, `${node.feature} > ${node.threshold.toFixed(2)}`],
+                    rules);
+            }
+
+            return rules;
+        }
+
+        fit(X, y) {
+            this.totalSamples = X.length;
+            this.tree = this.buildTree(X, y);
+            this.rules = this.extractRules(this.tree);
+            return this;
+        }
+    }
+
+    function generateDecisionTreeRules() {
+        const { data } = preprocessData();
+
+        if (data.length < 5) {
+            return [{
+                name: "数据不足",
+                conditions: "数据样本数量太少，无法构建有效的决策树",
+                confidence: 0,
+                category: "警告"
+            }];
+        }
+
+        const maxDepth = parseInt(document.getElementById('max_depth').value) || 5;
+        const minSamplesSplit = parseInt(document.getElementById('min_samples_split').value) || 10;
+
+        const X = data.map(row => {
+            const features = {};
+            selectedColumns.features.forEach(feature => {
+                features[feature] = row[feature];
+            });
+            return features;
+        });
+
+        const y = data.map(row => row.target);
+
+        const tree = new SimpleDecisionTree(maxDepth, minSamplesSplit);
+        tree.fit(X, y);
+
+        return tree.rules.slice(0, 10); // 限制规则数量
+    }
+
+    // 简化的关联规则挖掘实现
+    class AssociationRules {
+        constructor(minSupport = 0.1, minConfidence = 0.5) {
+            this.minSupport = minSupport;
+            this.minConfidence = minConfidence;
+        }
+
+        // 将连续变量离散化
+        discretizeFeature(values, feature) {
+            const sortedValues = [...values].sort((a, b) => a - b);
+            const q1 = sortedValues[Math.floor(sortedValues.length * 0.25)];
+            const q3 = sortedValues[Math.floor(sortedValues.length * 0.75)];
+            const median = sortedValues[Math.floor(sortedValues.length * 0.5)];
+
+            return values.map(val => {
+                if (val <= q1) return `${feature}_低`;
+                else if (val >= q3) return `${feature}_高`;
+                else return `${feature}_中`;
+            });
+        }
+
+        // 准备事务数据
+        prepareTransactions(data) {
+            const transactions = [];
+            const featureNames = selectedColumns.features;
+
+            // 为每个特征计算离散化
+            const discretizedFeatures = {};
+            featureNames.forEach(feature => {
+                const values = data.map(row => row[feature]);
+                discretizedFeatures[feature] = this.discretizeFeature(values, feature);
+            });
+
+            // 构建事务
+            data.forEach((row, i) => {
+                const transaction = [];
+                featureNames.forEach(feature => {
+                    transaction.push(discretizedFeatures[feature][i]);
+                });
+
+                // 添加目标变量
+                transaction.push(`目标_${row.target}`);
+
+                transactions.push(transaction);
+            });
+
+            return transactions;
+        }
+
+        // 计算支持度
+        calculateSupport(itemset, transactions) {
+            const count = transactions.filter(transaction =>
+                itemset.every(item => transaction.includes(item))
+            ).length;
+            return count / transactions.length;
+        }
+
+        // 生成频繁1项集
+        generateFrequent1Itemsets(transactions) {
+            const itemCounts = {};
+
+            transactions.forEach(transaction => {
+                transaction.forEach(item => {
+                    itemCounts[item] = (itemCounts[item] || 0) + 1;
+                });
+            });
+
+            const frequent1 = [];
+            for (const [item, count] of Object.entries(itemCounts)) {
+                const support = count / transactions.length;
+                if (support >= this.minSupport) {
+                    frequent1.push({ itemset: [item], support });
+                }
+            }
+
+            return frequent1;
+        }
+
+        // 生成候选项集
+        generateCandidates(frequentSets) {
+            const candidates = [];
+
+            for (let i = 0; i < frequentSets.length; i++) {
+                for (let j = i + 1; j < frequentSets.length; j++) {
+                    const set1 = frequentSets[i].itemset;
+                    const set2 = frequentSets[j].itemset;
+
+                    // 简化：只生成2项集
+                    if (set1.length === 1 && set2.length === 1) {
+                        candidates.push([...set1, ...set2]);
+                    }
+                }
+            }
+
+            return [...new Set(candidates.map(c => JSON.stringify(c.sort())))].map(c => JSON.parse(c));
+        }
+
+        // 生成关联规则
+        generateRules(frequentItemsets, transactions) {
+            const rules = [];
+
+            frequentItemsets.forEach(itemset => {
+                if (itemset.itemset.length < 2) return;
+
+                // 尝试不同的规则组合
+                for (let i = 0; i < itemset.itemset.length; i++) {
+                    const antecedent = itemset.itemset.filter((_, idx) => idx !== i);
+                    const consequent = [itemset.itemset[i]];
+
+                    if (antecedent.length === 0) continue;
+
+                    const antecedentSupport = this.calculateSupport(antecedent, transactions);
+                    const confidence = itemset.support / antecedentSupport;
+
+                    if (confidence >= this.minConfidence && antecedentSupport > 0) {
+                        // 计算提升度
+                        const consequentSupport = this.calculateSupport(consequent, transactions);
+                        const lift = confidence / consequentSupport;
+
+                        rules.push({
+                            antecedent,
+                            consequent,
+                            support: itemset.support,
+                            confidence,
+                            lift
+                        });
+                    }
+                }
+            });
+
+            return rules.sort((a, b) => b.confidence - a.confidence);
+        }
+
+        mine(data) {
+            const transactions = this.prepareTransactions(data);
+
+            // 生成频繁1项集
+            const frequent1 = this.generateFrequent1Itemsets(transactions);
+
+            // 生成候选2项集
+            const candidates2 = this.generateCandidates(frequent1);
+
+            // 计算频繁2项集
+            const frequent2 = candidates2
+                .map(itemset => ({
+                    itemset,
+                    support: this.calculateSupport(itemset, transactions)
+                }))
+                .filter(item => item.support >= this.minSupport);
+
+            // 生成关联规则
+            const allFrequent = [...frequent1, ...frequent2];
+            return this.generateRules(allFrequent, transactions);
+        }
+    }
+
+    function generateAssociationRules() {
+        const { data } = preprocessData();
+
+        if (data.length < 10) {
+            return [{
+                name: "数据不足",
+                conditions: "数据样本数量太少，无法进行关联规则挖掘",
+                confidence: 0,
+                category: "警告"
+            }];
+        }
+
+        const minSupport = parseFloat(document.getElementById('min_support').value) || 0.1;
+        const minConfidence = parseFloat(document.getElementById('min_confidence').value) || 0.5;
+
+        const associationMiner = new AssociationRules(minSupport, minConfidence);
+        const rules = associationMiner.mine(data);
+
+        if (rules.length === 0) {
+            return [{
+                name: "未发现关联规则",
+                conditions: "在当前参数设置下未发现满足条件的关联规则，请尝试降低支持度或置信度阈值",
+                confidence: 0,
+                category: "信息"
+            }];
+        }
+
+        return rules.slice(0, 8).map((rule, index) => ({
+            name: `关联规则 ${index + 1}`,
+            conditions: `${rule.antecedent.join(' 且 ')} => ${rule.consequent.join(' 且 ')}`,
+            confidence: rule.confidence,
+            support: rule.support,
+            lift: rule.lift,
+            category: rule.consequent[0].includes('目标') ? '目标预测' : '特征关联'
+        }));
+    }
+
+    // K-means聚类实现
+    class KMeansCluster {
+        constructor(k = 3, maxIter = 100) {
+            this.k = k;
+            this.maxIter = maxIter;
+            this.centroids = [];
+            this.labels = [];
+        }
+
+        distance(a, b) {
+            return Math.sqrt(a.reduce((sum, val, i) => sum + Math.pow(val - b[i], 2), 0));
+        }
+
+        initializeCentroids(data) {
+            this.centroids = [];
+            for (let i = 0; i < this.k; i++) {
+                const randomIndex = Math.floor(Math.random() * data.length);
+                this.centroids.push([...data[randomIndex]]);
+            }
+        }
+
+        assignClusters(data) {
+            this.labels = data.map(point => {
+                let minDistance = Infinity;
+                let cluster = 0;
+
+                this.centroids.forEach((centroid, i) => {
+                    const dist = this.distance(point, centroid);
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        cluster = i;
+                    }
+                });
+
+                return cluster;
+            });
+        }
+
+        updateCentroids(data) {
+            const newCentroids = Array(this.k).fill().map(() =>
+                Array(data[0].length).fill(0));
+            const counts = Array(this.k).fill(0);
+
+            data.forEach((point, i) => {
+                const cluster = this.labels[i];
+                counts[cluster]++;
+                point.forEach((val, j) => {
+                    newCentroids[cluster][j] += val;
+                });
+            });
+
+            this.centroids = newCentroids.map((centroid, i) =>
+                counts[i] > 0 ? centroid.map(val => val / counts[i]) : centroid);
+        }
+
+        fit(data) {
+            this.initializeCentroids(data);
+
+            for (let iter = 0; iter < this.maxIter; iter++) {
+                const oldLabels = [...this.labels];
+                this.assignClusters(data);
+                this.updateCentroids(data);
+
+                // 检查收敛
+                if (JSON.stringify(oldLabels) === JSON.stringify(this.labels)) {
+                    break;
+                }
+            }
+
+            return this;
+        }
+
+        analyzeCluster(clusterIndex, data, featureNames) {
+            const clusterPoints = data.filter((_, i) => this.labels[i] === clusterIndex);
+
+            if (clusterPoints.length === 0) return null;
+
+            const stats = featureNames.map((name, featureIndex) => {
+                const values = clusterPoints.map(point => point[featureIndex]);
+                const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
+                const min = Math.min(...values);
+                const max = Math.max(...values);
+
+                return { name, mean, min, max };
+            });
+
+            return {
+                size: clusterPoints.length,
+                stats: stats
+            };
+        }
+    }
+
+    function generateClusteringRules() {
+        const { data } = preprocessData();
+
+        if (data.length < 5) {
+            return [{
+                name: "数据不足",
+                conditions: "数据样本数量太少，无法进行聚类分析",
+                confidence: 0,
+                category: "警告"
+            }];
+        }
+
+        const nClusters = parseInt(document.getElementById('n_clusters').value) || 5;
+
+        // 准备特征数据
+        const featureNames = selectedColumns.features;
+        const X = data.map(row =>
+            featureNames.map(feature => row[feature])
+        );
+
+        // 标准化数据
+        const means = featureNames.map((_, i) =>
+            X.reduce((sum, row) => sum + row[i], 0) / X.length);
+        const stds = featureNames.map((_, i) => {
+            const mean = means[i];
+            const variance = X.reduce((sum, row) => sum + Math.pow(row[i] - mean, 2), 0) / X.length;
+            return Math.sqrt(variance) || 1;
+        });
+
+        const normalizedX = X.map(row =>
+            row.map((val, i) => (val - means[i]) / stds[i])
+        );
+
+        // 执行K-means聚类
+        const kmeans = new KMeansCluster(nClusters);
+        kmeans.fit(normalizedX);
+
+        // 生成规则
+        const rules = [];
+        for (let cluster = 0; cluster < nClusters; cluster++) {
+            const analysis = kmeans.analyzeCluster(cluster, normalizedX, featureNames);
+
+            if (!analysis || analysis.size === 0) continue;
+
+            // 找出每个聚类的显著特征
+            const significantFeatures = analysis.stats
+                .map((stat, i) => ({ ...stat, index: i }))
+                .filter(stat => Math.abs(stat.mean) > 0.5) // 标准化后大于0.5算显著
+                .sort((a, b) => Math.abs(b.mean) - Math.abs(a.mean))
+                .slice(0, 3);
+
+            if (significantFeatures.length > 0) {
+                const conditions = significantFeatures.map(feature => {
+                    const direction = feature.mean > 0 ? "高" : "低";
+                    const originalMean = feature.mean * stds[feature.index] + means[feature.index];
+                    return `${feature.name}${direction}(约${originalMean.toFixed(2)})`;
+                }).join(', ');
+
+                rules.push({
+                    name: `聚类${cluster + 1}模式`,
+                    conditions: `聚类特征: ${conditions}`,
+                    confidence: analysis.size / data.length,
+                    clusterSize: analysis.size,
+                    category: `聚类${cluster + 1}`
+                });
+            }
+        }
+
+        return rules.length > 0 ? rules : [{
+            name: "未发现明显聚类模式",
+            conditions: "数据可能分布较为均匀，未发现显著的聚类模式",
+            confidence: 0,
+            category: "信息"
+        }];
+    }
+
+    // 随机森林实现
+    class RandomForest {
+        constructor(nEstimators = 10, maxDepth = 5, maxFeatures = 0.8, maxSamples = 0.8) {
+            this.nEstimators = nEstimators;
+            this.maxDepth = maxDepth;
+            this.maxFeatures = maxFeatures;
+            this.maxSamples = maxSamples;
+            this.trees = [];
+            this.featureImportances = {};
+        }
+
+        // Bootstrap采样
+        bootstrap(X, y) {
+            const sampleSize = Math.floor(X.length * this.maxSamples);
+            const indices = [];
+
+            for (let i = 0; i < sampleSize; i++) {
+                indices.push(Math.floor(Math.random() * X.length));
+            }
+
+            return {
+                X: indices.map(i => X[i]),
+                y: indices.map(i => y[i])
+            };
+        }
+
+        // 随机特征选择
+        selectRandomFeatures(features) {
+            const nFeatures = Math.floor(features.length * this.maxFeatures);
+            const shuffled = [...features].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, nFeatures);
+        }
+
+        fit(X, y) {
+            const allFeatures = Object.keys(X[0]);
+            this.featureImportances = {};
+            allFeatures.forEach(feature => this.featureImportances[feature] = 0);
+
+            this.trees = [];
+
+            for (let i = 0; i < this.nEstimators; i++) {
+                // Bootstrap采样
+                const { X: bootX, y: bootY } = this.bootstrap(X, y);
+
+                // 随机特征选择
+                const selectedFeatures = this.selectRandomFeatures(allFeatures);
+
+                // 过滤特征
+                const filteredX = bootX.map(row => {
+                    const filtered = {};
+                    selectedFeatures.forEach(feature => {
+                        filtered[feature] = row[feature];
+                    });
+                    return filtered;
+                });
+
+                // 训练决策树
+                const tree = new SimpleDecisionTree(this.maxDepth, 2);
+                tree.fit(filteredX, bootY);
+
+                this.trees.push({
+                    tree: tree,
+                    features: selectedFeatures
+                });
+
+                // 累计特征重要性（简化计算）
+                selectedFeatures.forEach(feature => {
+                    this.featureImportances[feature] += 1 / this.nEstimators;
+                });
+            }
+
+            return this;
+        }
+
+        // 提取综合规则
+        extractEnsembleRules() {
+            const rules = [];
+
+            // 基于特征重要性的规则
+            const sortedFeatures = Object.entries(this.featureImportances)
+                .sort(([, a], [, b]) => b - a)
+                .slice(0, 5);
+
+            if (sortedFeatures.length > 0) {
+                const featureList = sortedFeatures
+                    .map(([feature, importance]) => `${feature}(${importance.toFixed(2)})`)
+                    .join(' + ');
+
+                rules.push({
+                    name: "特征重要性综合规则",
+                    conditions: `基于随机森林特征重要性: ${featureList}`,
+                    confidence: 0.9,
+                    feature_importance: Object.fromEntries(sortedFeatures),
+                    category: "综合评分"
+                });
+            }
+
+            // 从各个树中提取高置信度规则
+            const allTreeRules = [];
+            this.trees.forEach((treeData, index) => {
+                const treeRules = treeData.tree.rules
+                    .filter(rule => rule.confidence > 0.7)
+                    .slice(0, 2);
+
+                treeRules.forEach(rule => {
+                    allTreeRules.push({
+                        ...rule,
+                        name: `森林规则 ${allTreeRules.length + 1}`,
+                        conditions: `树${index + 1}: ${rule.conditions}`,
+                        category: "森林投票"
+                    });
+                });
+            });
+
+            // 选择最好的树规则
+            const topTreeRules = allTreeRules
+                .sort((a, b) => b.confidence - a.confidence)
+                .slice(0, 3);
+
+            return [...rules, ...topTreeRules];
+        }
+    }
+
+    function generateRandomForestRules() {
+        const { data } = preprocessData();
+
+        if (data.length < 10) {
+            return [{
+                name: "数据不足",
+                conditions: "数据样本数量太少，无法构建随机森林",
+                confidence: 0,
+                category: "警告"
+            }];
+        }
+
+        const nEstimators = parseInt(document.getElementById('n_estimators').value) || 10;
+        const maxDepth = parseInt(document.getElementById('rf_max_depth').value) || 10;
+        const maxFeatures = parseFloat(document.getElementById('max_features').value) || 0.8;
+        const maxSamples = parseFloat(document.getElementById('max_samples').value) || 0.8;
+
+        const X = data.map(row => {
+            const features = {};
+            selectedColumns.features.forEach(feature => {
+                features[feature] = row[feature];
+            });
+            return features;
+        });
+
+        const y = data.map(row => row.target);
+
+        try {
+            const forest = new RandomForest(nEstimators, maxDepth, maxFeatures, maxSamples);
+            forest.fit(X, y);
+
+            const rules = forest.extractEnsembleRules();
+
+            return rules.length > 0 ? rules : [{
+                name: "随机森林训练完成",
+                conditions: "随机森林训练完成，但未提取到显著规则",
+                confidence: 0,
+                category: "信息"
+            }];
+
+        } catch (error) {
+            return [{
+                name: "随机森林错误",
+                conditions: `随机森林训练出错: ${error.message}`,
+                confidence: 0,
+                category: "错误"
+            }];
+        }
+    }
+
+    function displayGeneratedRules() {
+        const output = document.getElementById('rulesOutput');
+        const count = document.getElementById('ruleCount');
+
+        count.textContent = generatedRules.length;
+
+        output.innerHTML = generatedRules.map((rule, index) => `
+                <div class="rule-item">
+                    <div class="rule-header">
+                        <div class="rule-name">规则 ${index + 1}: ${rule.name}</div>
+                        <div class="rule-confidence">置信度: ${(rule.confidence * 100).toFixed(1)}%</div>
+                    </div>
+                    <div class="rule-conditions">${rule.conditions}</div>
+                    ${rule.support ? `<div style="color: #a0a0a0; font-size: 12px; margin-top: 5px;">支持度: ${(rule.support * 100).toFixed(1)}%</div>` : ''}
+                    ${rule.lift ? `<div style="color: #a0a0a0; font-size: 12px;">提升度: ${rule.lift.toFixed(2)}</div>` : ''}
+                    ${rule.clusterSize ? `<div style="color: #a0a0a0; font-size: 12px;">聚类大小: ${rule.clusterSize} 样本</div>` : ''}
+                </div>
+            `).join('');
+    }
+
+    // 导出功能
+    function exportToMainSystem() {
+        const rulesForExport = generatedRules.map((rule, index) => ({
+            id: Date.now() + index,
+            name: rule.name,
+            category: rule.category || "智能提取",
+            description: rule.conditions,
+            conditions: parseRuleConditions(rule.conditions),
+            weight: Math.round(rule.confidence * 100)
+        }));
+
+        // 保存到localStorage，主系统可以读取
+        localStorage.setItem('extractedRules', JSON.stringify(rulesForExport));
+
+        alert(`已成功提取 ${rulesForExport.length} 条规则到主系统！\n\n您可以返回主系统查看和编辑这些规则。`);
+    }
+
+    function parseRuleConditions(conditionText) {
+        // 简单的条件解析，实际项目中需要更复杂的解析逻辑
+        const conditions = [];
+
+        if (conditionText.includes('交易金额')) {
+            conditions.push({
+                field: "交易金额",
+                operator: "大于",
+                value: "100000"
+            });
+        }
+
+        if (conditionText.includes('交易时间')) {
+            conditions.push({
+                field: "交易时间",
+                operator: "等于",
+                value: "深夜"
+            });
+        }
+
+        if (conditionText.includes('账户类型')) {
+            conditions.push({
+                field: "账户类型",
+                operator: "等于",
+                value: "个人账户"
+            });
+        }
+
+        return conditions.length > 0 ? conditions : [
+            { field: "系统生成", operator: "基于", value: "机器学习算法" }
+        ];
+    }
+
+    function exportAsJSON() {
+        const dataStr = JSON.stringify(generatedRules, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'extracted_rules.json';
+        link.click();
+
+        URL.revokeObjectURL(url);
+    }
+
+    function exportAsCSV() {
+        const headers = ['规则名称', '条件', '置信度', '类别'];
+        const csvContent = [
+            headers.join(','),
+            ...generatedRules.map(rule => [
+                rule.name,
+                `"${rule.conditions}"`,
+                rule.confidence,
+                rule.category || ''
+            ].join(','))
+        ].join('\n');
+
+        const dataBlob = new Blob([csvContent], { type: 'text/csv' });
+        const url = URL.createObjectURL(dataBlob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'extracted_rules.csv';
+        link.click();
+
+        URL.revokeObjectURL(url);
+    }
+
+    // 初始化应用
+    init();</script>

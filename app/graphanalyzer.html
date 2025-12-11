@@ -1,0 +1,3747 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网络可视化分析系统</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: #ffffff;
+            color: #333333;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0066B3 0%, #004d87 100%);
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(255, 255, 255, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e0e7ed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            background: linear-gradient(135deg, #ffffff 0%, #f0f8ff 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            letter-spacing: 2px;
+            margin: 0;
+        }
+
+        .back-button {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 20px;
+            /* 字体略小于标题 */
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(calc(-50% - 1px));
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .back-button:active {
+            transform: translateY(-50%);
+            transition: none;
+        }
+
+        .container {
+            display: flex;
+            height: calc(100vh - 80px);
+        }
+
+        .sidebar {
+            width: 420px;
+            /* 增大默认宽度 */
+            background: #f8fafc;
+            border-right: 1px solid #e0e7ed;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            position: relative;
+            min-width: 280px;
+            /* 最小宽度 */
+            max-width: 60vw;
+            /* 最大宽度不超过视窗60% */
+        }
+
+        /* 拖拽调整条 */
+        .resize-handle {
+            position: absolute;
+            top: 0;
+            right: -2px;
+            /* 调整位置，让拖拽区域更容易接触 */
+            width: 8px;
+            /* 增大拖拽区域 */
+            height: 100%;
+            background: transparent;
+            /* 默认透明 */
+            cursor: col-resize;
+            z-index: 1001;
+            transition: background-color 0.2s ease;
+        }
+
+        .resize-handle:hover,
+        .resize-handle.dragging {
+            background: rgba(0, 102, 179, 0.3);
+        }
+
+        .resize-handle::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 2px;
+            width: 2px;
+            height: 100%;
+            background: #ddd;
+            transition: background-color 0.2s ease;
+        }
+
+        .resize-handle:hover::before,
+        .resize-handle.dragging::before {
+            background: #0066B3;
+        }
+
+        .resize-handle::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 50px;
+            background: transparent;
+            cursor: col-resize;
+        }
+
+        /* 移动端样式 */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                height: calc(100vh - 80px);
+            }
+
+            .sidebar {
+                width: 100% !important;
+                max-width: 100% !important;
+                height: auto;
+                max-height: 40vh;
+                border-right: none;
+                border-bottom: 1px solid #e0e7ed;
+                transform: translateY(0) !important;
+                flex-shrink: 0;
+            }
+
+            .resize-handle {
+                display: none;
+            }
+
+            .main-content {
+                flex: 1;
+                min-height: 0;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .visualization-area {
+                flex: 1;
+                min-height: 300px;
+                position: relative;
+                overflow: hidden;
+            }
+
+            #graph-container {
+                width: 100%;
+                height: 100%;
+                position: relative;
+            }
+
+            #graph {
+                width: 100% !important;
+                height: 100% !important;
+            }
+
+            .sidebar.mobile-collapsed {
+                max-height: 60px;
+                overflow: hidden;
+            }
+
+            .mobile-toggle {
+                display: block;
+                position: sticky;
+                top: 0;
+                background: #0066B3;
+                color: white;
+                border: none;
+                padding: 10px;
+                cursor: pointer;
+                width: 100%;
+                z-index: 1002;
+            }
+
+            .panel-section {
+                margin-bottom: 15px;
+                padding: 15px;
+            }
+
+            .panel-section h3 {
+                font-size: 14px;
+                margin-bottom: 10px;
+            }
+
+            .btn {
+                padding: 12px 16px;
+                font-size: 14px;
+                margin: 3px;
+            }
+
+            .stats-grid {
+                gap: 5px;
+            }
+
+            .stat-card {
+                min-width: 70px;
+                padding: 6px;
+            }
+
+            .stat-value {
+                font-size: 14px;
+            }
+
+            .threshold-control input[type="range"] {
+                height: 30px;
+            }
+
+            .filter-section {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .tab {
+                flex: 1;
+                min-width: 80px;
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            .analysis-panel {
+                max-height: 200px;
+            }
+
+            .account-item {
+                font-size: 10px;
+                padding: 6px 8px;
+            }
+
+            /* 图表区域触摸优化 */
+            #graph-container {
+                touch-action: manipulation;
+            }
+
+            .node {
+                r: 8;
+                /* 移动端增大节点便于点击 */
+            }
+        }
+
+        @media (min-width: 769px) {
+            .mobile-toggle {
+                display: none;
+            }
+        }
+
+        /* 桌面端隐藏切换按钮 */
+        .mobile-toggle {
+            display: none;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+        }
+
+        .control-panel {
+            background: #f8fafc;
+            border-bottom: 1px solid #e0e7ed;
+            padding: 20px;
+        }
+
+        .panel-section {
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #e0e7ed;
+        }
+
+        .panel-section h3 {
+            color: #0066B3;
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .file-input-container {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #0066B3 0%, #004d87 100%);
+            color: white;
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            font-size: 14px;
+        }
+
+        .file-input-label:hover {
+            background: linear-gradient(135deg, #0052a3 0%, #003d77 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 102, 179, 0.3);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #0066B3 0%, #004d87 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #0052a3 0%, #003d77 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 102, 179, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+        }
+
+        .visualization-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #graph-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .analysis-panel {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .analysis-result {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #0066B3;
+        }
+
+        .analysis-result h4 {
+            color: #0066B3;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .account-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .account-item {
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: #ffffff;
+            border-radius: 4px;
+            border: 1px solid #e0e7ed;
+            font-family: monospace;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .account-item:hover {
+            background: #e3f2fd;
+            border-color: #0066B3;
+        }
+
+        .account-item.highlighted {
+            background: #ffeb3b;
+            border-color: #ff9800;
+        }
+
+        .stats-grid {
+            display: flex;
+            /* 改为 flex 单行布局 */
+            gap: 8px;
+            /* 减小间距 */
+            margin-bottom: 15px;
+            /* 减小底部边距 */
+            overflow-x: auto;
+            /* 允许水平滚动 */
+        }
+
+        .stat-card {
+            flex: 1;
+            /* 等宽分布 */
+            min-width: 80px;
+            /* 最小宽度 */
+            padding: 8px;
+            /* 减小内边距 */
+            background: #ffffff;
+            border-radius: 6px;
+            border: 1px solid #e0e7ed;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            /* 减小字体 */
+            font-weight: bold;
+            color: #0066B3;
+            margin-bottom: 2px;
+            /* 减小间距 */
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            /* 减小字体 */
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            line-height: 1.1;
+        }
+
+        .node {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .node:hover {
+            stroke-width: 3px;
+        }
+
+        .link {
+            stroke: #999;
+            stroke-opacity: 0.6;
+            transition: all 0.3s ease;
+        }
+
+        .link:hover {
+            stroke-opacity: 1;
+            stroke-width: 3px;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e7ed;
+            backdrop-filter: blur(5px);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .data-info {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #0d47a1;
+        }
+
+        .threshold-control {
+            margin-bottom: 15px;
+        }
+
+        .threshold-control label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .threshold-control input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+
+        .threshold-value {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+
+        .filter-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .filter-section input,
+        .filter-section select {
+            padding: 8px 12px;
+            border: 1px solid #e0e7ed;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .export-section {
+            border-top: 1px solid #e0e7ed;
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e0e7ed;
+            margin-bottom: 15px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: #f8fafc;
+            border: none;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: #0066B3;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .risk-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .risk-high {
+            background: #ff4444;
+        }
+
+        .risk-medium {
+            background: #ffaa00;
+        }
+
+        .risk-low {
+            background: #00c851;
+        }
+
+        .pattern-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .pattern-item {
+            padding: 10px;
+            margin: 8px 0;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 4px;
+        }
+
+        .time-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .time-control input[type="date"] {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #e0e7ed;
+            border-radius: 4px;
+        }
+
+        /* 新增样式 */
+        .field-mapping {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f8ff;
+            border: 1px solid #cce5ff;
+            border-radius: 8px;
+        }
+
+        .field-mapping h4 {
+            color: #0066B3;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .field-mapping-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .field-mapping-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .field-mapping-item label {
+            font-size: 14px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .field-mapping-item select {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #cce5ff;
+            border-radius: 6px;
+            font-size: 14px;
+            background-color: #fff;
+        }
+
+        .field-mapping-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* 平板端适配 */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .sidebar {
+                width: 350px;
+                max-width: 40vw;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* 拖拽时的视觉反馈 */
+        .sidebar.resizing {
+            transition: none;
+            /* 拖拽时禁用过渡动画 */
+        }
+
+        body.col-resizing {
+            cursor: col-resize !important;
+            user-select: none !important;
+        }
+
+        body.col-resizing * {
+            cursor: col-resize !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <a href="index.html" class="back-button">返回主系统</a>
+        <h1>网络可视化分析系统</h1>
+    </div>
+
+    <div class="container">
+        <div class="sidebar" id="sidebar">
+            <button class="mobile-toggle" onclick="toggleSidebar()">
+                <span id="toggleText">收起面板</span>
+            </button>
+            <div class="resize-handle" id="resizeHandle"></div>
+
+            <div class="panel-section">
+                <h3>数据导入</h3>
+                <div class="file-input-container">
+                    <input type="file" id="csvFile" class="file-input" accept=".csv">
+                    <label for="csvFile" class="file-input-label">选择CSV文件</label>
+                </div>
+                <button class="btn btn-secondary" onclick="loadDefaultData()" style="width: 100%; margin-top: 10px;">
+                    加载示例数据
+                </button>
+                <div id="dataInfo" class="data-info" style="display:none;"></div>
+
+                <!-- 字段选择界面 -->
+                <div id="fieldMapping" class="field-mapping" style="display:none;">
+                    <h4>字段映射设置</h4>
+                    <div class="field-mapping-grid">
+                        <div class="field-mapping-item">
+                            <label>发送方账户:</label>
+                            <select id="fromField"></select>
+                        </div>
+                        <div class="field-mapping-item">
+                            <label>接收方账户:</label>
+                            <select id="toField"></select>
+                        </div>
+                        <div class="field-mapping-item">
+                            <label>交易金额:</label>
+                            <select id="amountField"></select>
+                        </div>
+                        <div class="field-mapping-item">
+                            <label>交易时间 (可选):</label>
+                            <select id="timeField">
+                                <option value="">不使用</option>
+                            </select>
+                        </div>
+                        <div class="field-mapping-item">
+                            <label>发送方银行 (可选):</label>
+                            <select id="fromBankField">
+                                <option value="">不使用</option>
+                            </select>
+                        </div>
+                        <div class="field-mapping-item">
+                            <label>接收方银行 (可选):</label>
+                            <select id="toBankField">
+                                <option value="">不使用</option>
+                            </select>
+                        </div>
+                        <div class="field-mapping-item">
+                            <label>交易类型 (可选):</label>
+                            <select id="transTypeField">
+                                <option value="">不使用</option>
+                            </select>
+                        </div>
+                        <div class="field-mapping-item">
+                            <label>洗钱标签 (可选):</label>
+                            <select id="launderingField">
+                                <option value="">不使用</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="field-mapping-actions">
+                        <button class="btn" id="applyMapping">应用映射</button>
+                        <button class="btn btn-secondary" id="autoDetectFields">自动检测</button>
+                        <button class="btn btn-secondary" id="cancelMapping">取消</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>统计概览</h3>
+                <div class="stats-grid" id="statsGrid"></div>
+            </div>
+
+            <div class="panel-section">
+                <h3>分析控制</h3>
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('basic')">基础分析</button>
+                    <button class="tab" onclick="switchTab('advanced')">高级分析</button>
+                    <button class="tab" onclick="switchTab('pattern')">模式检测</button>
+                </div>
+
+                <div id="basicTab" class="tab-content active">
+                    <div class="threshold-control">
+                        <label>最小交易金额阈值</label>
+                        <input type="range" id="amountThreshold" min="0" max="10000" value="0" step="10">
+                        <div class="threshold-value" id="amountValue">100</div>
+                    </div>
+
+                    <div class="threshold-control">
+                        <label>最小交易次数阈值</label>
+                        <input type="range" id="countThreshold" min="1" max="50" value="1" step="1">
+                        <div class="threshold-value" id="countValue">2</div>
+                    </div>
+
+                    <!-- 添加聚类算法选择 -->
+                    <div class="threshold-control">
+                        <label>聚类算法</label>
+                        <select id="clusteringAlgorithm"
+                            style="width: 100%; padding: 8px; border: 1px solid #e0e7ed; border-radius: 4px;">
+                            <option value="louvain">Louvain社区检测</option>
+                            <option value="connected-components">连通组件检测</option>
+                            <option value="kmeans">K-means聚类</option>
+                            <option value="hierarchical">层次聚类</option>
+                            <option value="spectral">谱聚类</option>
+                        </select>
+                    </div>
+
+                    <!-- 聚类参数设置 -->
+                    <div class="threshold-control" id="clusterParams">
+                        <label id="paramLabel">聚类数量</label>
+                        <input type="range" id="clusterCount" min="2" max="20" value="5" step="1">
+                        <div class="threshold-value" id="clusterCountValue">5</div>
+                    </div>
+
+                    <div class="threshold-control">
+                        <label>社区检测分辨率</label>
+                        <input type="range" id="resolution" min="0.1" max="2.0" value="1.0" step="0.1">
+                        <div class="threshold-value" id="resolutionValue">1.0</div>
+                    </div>
+
+                    <button class="btn" onclick="runSelectedClustering()">运行聚类分析</button>
+                    <button class="btn" onclick="runCentralityAnalysis()">中心性分析</button>
+                    <button class="btn" id="colorModeButton" onclick="switchColorMode()">切换到社区颜色</button>
+                </div>
+
+                <div id="advancedTab" class="tab-content">
+                    <button class="btn" onclick="detectCycles()">环路检测</button>
+                    <button class="btn" onclick="detectAnomalies()">异常检测</button>
+                    <button class="btn" onclick="analyzeTimePatterns()">时间模式分析</button>
+                    <button class="btn" onclick="detectMoneyLaundering()">洗钱模式检测</button>
+                </div>
+
+                <div id="patternTab" class="tab-content">
+                    <button class="btn" onclick="detectSuspiciousPatterns()">检测所有可疑模式</button>
+                    <div id="patternResults" class="pattern-list"></div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>筛选与搜索</h3>
+                <div class="filter-section">
+                    <input type="text" id="searchAccount" placeholder="搜索账户">
+                    <select id="nodeFilter">
+                        <option value="all">所有节点</option>
+                        <option value="high-risk">高风险</option>
+                        <option value="medium-risk">中风险</option>
+                        <option value="low-risk">低风险</option>
+                    </select>
+                </div>
+
+                <div class="time-control">
+                    <input type="date" id="startDate" placeholder="开始日期">
+                    <input type="date" id="endDate" placeholder="结束日期">
+                    <button class="btn btn-secondary" onclick="applyTimeFilter()">应用</button>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>分析结果</h3>
+                <div id="analysisResults" class="analysis-panel"></div>
+            </div>
+
+            <div class="panel-section export-section">
+                <h3>导出功能</h3>
+                <button class="btn" onclick="exportGraphData()">导出图数据</button>
+                <button class="btn" onclick="exportAnalysisReport()">导出分析报告</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="visualization-area">
+                <div id="graph-container">
+                    <svg id="graph"></svg>
+                    <div class="legend" id="legend"></div>
+                    <div class="tooltip" id="tooltip"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量 - 添加颜色模式控制
+        let rawData = [];
+        let nodes = [];
+        let links = [];
+        let simulation;
+        let svg, g, link, node, labels;
+        let currentCommunities = new Map();
+        let riskScores = new Map();
+        let suspiciousPatterns = [];
+        let colorMode = 'risk'; // 'risk' 或 'community' - 新增颜色模式控制
+
+        // 字段映射
+        const fieldMappings = {
+            from: ['from', '发送方', 'sender', '发送账户', 'source', '来源', 'account_no', 'sender_account', 'from bank account', 'account'],
+            to: ['to', '接收方', 'receiver', '接收账户', 'target', '目标', 'cpy_account', 'receiver_account', 'to bank account'],
+            amount: ['amount', '金额', 'value', '交易金额', 'money', 'trans_amount', 'amount received', 'amount paid'],
+            time: ['time', '时间', 'date', '日期', 'timestamp', '时间戳', 'trans_date', 'trans_time'],
+            fromBank: ['from_bank', '发送银行', 'sender_bank', 'from bank', 'sender_bank_location'],
+            toBank: ['to_bank', '接收银行', 'receiver_bank', 'to bank', 'receiver_bank_location'],
+            transType: ['type', '交易类型', 'trans_type', 'payment_type', 'payment format', 'channel'],
+            laundering: ['is_laundering', '洗钱标签', 'laundering', 'laundering_type']
+        };
+
+        // 当前数据的字段信息
+        let currentHeaders = [];
+        let currentRawData = [];
+
+        // 初始化
+        document.getElementById('csvFile').addEventListener('change', handleFileUpload);
+        document.getElementById('amountThreshold').addEventListener('input', updateThreshold);
+        document.getElementById('countThreshold').addEventListener('input', updateThreshold);
+        document.getElementById('searchAccount').addEventListener('input', searchAccount);
+        document.getElementById('nodeFilter').addEventListener('change', filterNodes);
+
+        // 字段映射相关事件
+        document.getElementById('applyMapping').addEventListener('click', applyFieldMapping);
+        document.getElementById('autoDetectFields').addEventListener('click', autoDetectAndApply);
+        document.getElementById('cancelMapping').addEventListener('click', cancelFieldMapping);
+
+        // 生成默认交易数据 - 减少洗钱标记
+        function generateDefaultData() {
+            const data = [];
+            const accounts = [];
+            const banks = ['工商银行', '建设银行', '招商银行', '农业银行', '中国银行', '交通银行', '浦发银行', '民生银行'];
+            const transTypes = ['转账', '提现', '充值', '购买', '销售', '投资', '借贷', '还款'];
+
+            // 生成账户ID
+            for (let i = 1; i <= 50; i++) {
+                accounts.push(`ACC${String(i).padStart(4, '0')}`);
+            }
+
+            // 获取随机日期（最近6个月）
+            function getRandomDate() {
+                const now = new Date();
+                const sixMonthsAgo = new Date(now.getTime() - 6 * 30 * 24 * 60 * 60 * 1000);
+                const randomTime = sixMonthsAgo.getTime() + Math.random() * (now.getTime() - sixMonthsAgo.getTime());
+                return new Date(randomTime).toISOString().split('T')[0];
+            }
+
+            // 获取随机银行
+            function getRandomBank() {
+                return banks[Math.floor(Math.random() * banks.length)];
+            }
+
+            // 获取随机交易类型
+            function getRandomTransType() {
+                return transTypes[Math.floor(Math.random() * transTypes.length)];
+            }
+
+            // 1. 生成主要交易网络（大型连通图）
+            const mainNetworkAccounts = accounts.slice(0, 35);
+            for (let i = 0; i < 120; i++) {
+                const from = mainNetworkAccounts[Math.floor(Math.random() * mainNetworkAccounts.length)];
+                let to = mainNetworkAccounts[Math.floor(Math.random() * mainNetworkAccounts.length)];
+                while (to === from) {
+                    to = mainNetworkAccounts[Math.floor(Math.random() * mainNetworkAccounts.length)];
+                }
+
+                // 正常交易金额分布
+                let amount;
+                if (Math.random() < 0.7) {
+                    amount = Math.random() * 50000 + 1000; // 正常范围
+                } else {
+                    amount = Math.random() * 200000 + 50000; // 大额交易
+                }
+
+                data.push({
+                    from: from,
+                    to: to,
+                    amount: Math.round(amount * 100) / 100,
+                    time: getRandomDate(),
+                    fromBank: getRandomBank(),
+                    toBank: getRandomBank(),
+                    transType: getRandomTransType(),
+                    laundering: '0'
+                });
+            }
+
+            // 2. 生成中心化账户（扇入扇出模式）
+            const hubAccount = 'ACC0001'; // 中心账户
+            for (let i = 0; i < 25; i++) {
+                const otherAccount = accounts[Math.floor(Math.random() * 20) + 10];
+
+                // 扇入：多个账户向中心账户转账
+                if (Math.random() < 0.6) {
+                    data.push({
+                        from: otherAccount,
+                        to: hubAccount,
+                        amount: Math.round((Math.random() * 30000 + 5000) * 100) / 100,
+                        time: getRandomDate(),
+                        fromBank: getRandomBank(),
+                        toBank: getRandomBank(),
+                        transType: getRandomTransType(),
+                        laundering: '0'
+                    });
+                }
+
+                // 扇出：中心账户向多个账户转账
+                if (Math.random() < 0.6) {
+                    data.push({
+                        from: hubAccount,
+                        to: otherAccount,
+                        amount: Math.round((Math.random() * 25000 + 3000) * 100) / 100,
+                        time: getRandomDate(),
+                        fromBank: getRandomBank(),
+                        toBank: getRandomBank(),
+                        transType: getRandomTransType(),
+                        laundering: '0'
+                    });
+                }
+            }
+
+            // 3. 生成可疑洗钱模式 - 减少洗钱标记
+            // 3.1 快速流转模式（资金快进快出）
+            const launderingAccounts = ['ACC0002', 'ACC0003', 'ACC0004'];
+            launderingAccounts.forEach(launderAcc => {
+                // 大量资金流入
+                for (let i = 0; i < 8; i++) {
+                    const sourceAcc = accounts[Math.floor(Math.random() * 10) + 35];
+                    data.push({
+                        from: sourceAcc,
+                        to: launderAcc,
+                        amount: Math.round((Math.random() * 80000 + 20000) * 100) / 100,
+                        time: getRandomDate(),
+                        fromBank: getRandomBank(),
+                        toBank: getRandomBank(),
+                        transType: '转账',
+                        laundering: Math.random() < 0.3 ? '1' : '0'  // 只有30%概率标记为洗钱
+                    });
+                }
+
+                // 快速流出到多个账户
+                for (let i = 0; i < 12; i++) {
+                    const targetAcc = accounts[Math.floor(Math.random() * 15) + 20];
+                    data.push({
+                        from: launderAcc,
+                        to: targetAcc,
+                        amount: Math.round((Math.random() * 15000 + 5000) * 100) / 100,
+                        time: getRandomDate(),
+                        fromBank: getRandomBank(),
+                        toBank: getRandomBank(),
+                        transType: Math.random() < 0.5 ? '转账' : '提现',
+                        laundering: Math.random() < 0.4 ? '1' : '0'  // 只有40%概率标记为洗钱
+                    });
+                }
+            });
+
+            // 3.2 分层洗钱模式（多层转账）
+            const layeringChain = ['ACC0005', 'ACC0006', 'ACC0007', 'ACC0008', 'ACC0009'];
+            for (let i = 0; i < layeringChain.length - 1; i++) {
+                data.push({
+                    from: layeringChain[i],
+                    to: layeringChain[i + 1],
+                    amount: Math.round((Math.random() * 100000 + 50000) * 100) / 100,
+                    time: getRandomDate(),
+                    fromBank: getRandomBank(),
+                    toBank: getRandomBank(),
+                    transType: '转账',
+                    laundering: Math.random() < 0.6 ? '1' : '0'  // 60%概率标记为洗钱
+                });
+            }
+
+            // 3.3 环形转账模式
+            const cycleAccounts = ['ACC0010', 'ACC0011', 'ACC0012'];
+            for (let i = 0; i < cycleAccounts.length; i++) {
+                const nextIndex = (i + 1) % cycleAccounts.length;
+                data.push({
+                    from: cycleAccounts[i],
+                    to: cycleAccounts[nextIndex],
+                    amount: Math.round((Math.random() * 60000 + 30000) * 100) / 100,
+                    time: getRandomDate(),
+                    fromBank: getRandomBank(),
+                    toBank: getRandomBank(),
+                    transType: '转账',
+                    laundering: Math.random() < 0.7 ? '1' : '0'  // 70%概率标记为洗钱
+                });
+            }
+
+            // 4. 独立小群体
+            const isolatedGroups = [
+                ['ACC0040', 'ACC0041', 'ACC0042'],
+                ['ACC0043', 'ACC0044', 'ACC0045', 'ACC0046'],
+                ['ACC0047', 'ACC0048']
+            ];
+
+            isolatedGroups.forEach(group => {
+                for (let i = 0; i < group.length; i++) {
+                    for (let j = 0; j < group.length; j++) {
+                        if (i !== j && Math.random() < 0.7) {
+                            data.push({
+                                from: group[i],
+                                to: group[j],
+                                amount: Math.round((Math.random() * 20000 + 2000) * 100) / 100,
+                                time: getRandomDate(),
+                                fromBank: getRandomBank(),
+                                toBank: getRandomBank(),
+                                transType: getRandomTransType(),
+                                laundering: '0'
+                            });
+                        }
+                    }
+                }
+            });
+
+            // 5. 高频小额交易（可疑模式）
+            const highFreqAccount = 'ACC0013';
+            for (let i = 0; i < 30; i++) {
+                const otherAcc = accounts[Math.floor(Math.random() * 20) + 15];
+                data.push({
+                    from: Math.random() < 0.5 ? highFreqAccount : otherAcc,
+                    to: Math.random() < 0.5 ? otherAcc : highFreqAccount,
+                    amount: Math.round((Math.random() * 9900 + 100) * 100) / 100, // 小额，避开监管阈值
+                    time: getRandomDate(),
+                    fromBank: getRandomBank(),
+                    toBank: getRandomBank(),
+                    transType: '转账',
+                    laundering: Math.random() < 0.2 ? '1' : '0'  // 只有20%概率标记为洗钱
+                });
+            }
+
+            // 6. 添加一些跨境交易特征
+            const crossBorderAccounts = ['ACC0014', 'ACC0015', 'ACC0016'];
+            crossBorderAccounts.forEach(acc => {
+                for (let i = 0; i < 5; i++) {
+                    const otherAcc = accounts[Math.floor(Math.random() * 10) + 25];
+                    data.push({
+                        from: acc,
+                        to: otherAcc,
+                        amount: Math.round((Math.random() * 500000 + 100000) * 100) / 100,
+                        time: getRandomDate(),
+                        fromBank: Math.random() < 0.5 ? '境外银行' : getRandomBank(),
+                        toBank: getRandomBank(),
+                        transType: '境外汇款',
+                        laundering: Math.random() < 0.15 ? '1' : '0'  // 只有15%概率标记为洗钱
+                    });
+                }
+            });
+
+            return data;
+        }
+
+        // 加载默认数据
+        function loadDefaultData() {
+            const defaultData = generateDefaultData();
+            currentRawData = defaultData;
+            currentHeaders = ['from', 'to', 'amount', 'time', 'fromBank', 'toBank', 'transType', 'laundering'];
+
+            // 显示数据信息
+            document.getElementById('dataInfo').style.display = 'block';
+            document.getElementById('dataInfo').innerHTML = `
+                <strong>示例数据已加载</strong><br>
+                交易记录: ${defaultData.length} 条<br>
+                <small>包含正常交易、洗钱模式、独立群体等多种场景</small>
+            `;
+
+            // 自动映射字段
+            const defaultFieldMapping = {
+                from: 'from',
+                to: 'to',
+                amount: 'amount',
+                time: 'time',
+                fromBank: 'fromBank',
+                toBank: 'toBank',
+                transType: 'transType',
+                laundering: 'laundering'
+            };
+
+            // 处理数据
+            processData(defaultData, defaultFieldMapping);
+        }
+
+        // 页面加载完成后自动加载默认数据
+        window.addEventListener('load', function () {
+            setTimeout(() => {
+                loadDefaultData();
+            }, 1000);
+
+            // 初始化拖拽功能
+            initSidebarResize();
+        });
+
+        // 移动端侧边栏切换
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleText = document.getElementById('toggleText');
+
+            if (sidebar.classList.contains('mobile-collapsed')) {
+                sidebar.classList.remove('mobile-collapsed');
+                toggleText.textContent = '收起面板';
+            } else {
+                sidebar.classList.add('mobile-collapsed');
+                toggleText.textContent = '展开面板';
+            }
+        }
+
+        // 初始化侧边栏拖拽调整功能
+        function initSidebarResize() {
+            const resizeHandle = document.getElementById('resizeHandle');
+            const sidebar = document.getElementById('sidebar');
+
+            if (!resizeHandle || !sidebar) return;
+
+            let isResizing = false;
+            let startX = 0;
+            let startWidth = 0;
+
+            // 鼠标事件
+            resizeHandle.addEventListener('mousedown', startResize);
+            document.addEventListener('mousemove', doResize);
+            document.addEventListener('mouseup', stopResize);
+
+            // 触摸事件（移动端支持）
+            resizeHandle.addEventListener('touchstart', startResizeTouch, { passive: false });
+            document.addEventListener('touchmove', doResizeTouch, { passive: false });
+            document.addEventListener('touchend', stopResize);
+
+            function startResize(e) {
+                isResizing = true;
+                startX = e.clientX;
+                startWidth = parseInt(window.getComputedStyle(sidebar).width, 10);
+                resizeHandle.classList.add('dragging');
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            function startResizeTouch(e) {
+                if (e.touches.length === 1) {
+                    isResizing = true;
+                    startX = e.touches[0].clientX;
+                    startWidth = parseInt(window.getComputedStyle(sidebar).width, 10);
+                    resizeHandle.classList.add('dragging');
+                    e.preventDefault();
+                }
+            }
+
+            function doResize(e) {
+                if (!isResizing) return;
+
+                e.preventDefault();
+                const clientX = e.clientX;
+                resizeSidebar(clientX);
+            }
+
+            function doResizeTouch(e) {
+                if (!isResizing || e.touches.length !== 1) return;
+
+                const clientX = e.touches[0].clientX;
+                resizeSidebar(clientX);
+                e.preventDefault();
+            }
+
+            function resizeSidebar(clientX) {
+                const dx = clientX - startX;
+                const newWidth = startWidth + dx;
+                const minWidth = 280;
+                const maxWidth = Math.min(window.innerWidth * 0.6, 800);
+
+                // 确保新宽度在有效范围内
+                const clampedWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
+                sidebar.style.width = clampedWidth + 'px';
+
+                // 实时更新图表布局
+                requestAnimationFrame(() => {
+                    if (typeof updateVisualizationLayout === 'function') {
+                        updateVisualizationLayout();
+                    }
+                });
+            }
+
+            function stopResize() {
+                if (isResizing) {
+                    isResizing = false;
+                    resizeHandle.classList.remove('dragging');
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+
+                    // 拖拽结束后重新渲染图表
+                    setTimeout(() => {
+                        if (simulation) {
+                            const container = document.getElementById('graph-container');
+                            if (container) {
+                                const width = container.clientWidth;
+                                const height = container.clientHeight;
+
+                                svg.attr('width', width).attr('height', height);
+                                simulation.force('center', d3.forceCenter(width / 2, height / 2));
+                                simulation.alpha(0.3).restart();
+                            }
+                        }
+                    }, 100);
+                }
+            }
+        }
+
+        // 添加图表布局更新函数
+        function updateVisualizationLayout() {
+            if (simulation && svg) {
+                const container = document.getElementById('graph-container');
+                if (container) {
+                    const width = container.clientWidth;
+                    const height = container.clientHeight;
+
+                    svg.attr('width', width).attr('height', height);
+                    simulation.force('center', d3.forceCenter(width / 2, height / 2));
+                }
+            }
+        }
+
+        // 窗口大小改变时的处理
+        window.addEventListener('resize', function () {
+            // 移动端自适应
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('mobile-collapsed');
+                document.getElementById('toggleText').textContent = '展开面板';
+            } else {
+                document.getElementById('sidebar').classList.remove('mobile-collapsed');
+                document.getElementById('toggleText').textContent = '收起面板';
+            }
+        });
+
+        // 文件上传处理
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                Papa.parse(file, {
+                    header: true,
+                    dynamicTyping: true,
+                    complete: function (results) {
+                        currentRawData = results.data.filter(row => row && Object.keys(row).length > 0);
+
+                        if (currentRawData.length === 0) {
+                            alert('CSV文件中没有有效数据');
+                            return;
+                        }
+
+                        currentHeaders = Object.keys(currentRawData[0]);
+
+                        // 显示数据预览
+                        document.getElementById('dataInfo').style.display = 'block';
+                        document.getElementById('dataInfo').innerHTML = `
+                            <strong>数据预览</strong><br>
+                            总记录数: ${currentRawData.length} 条<br>
+                            检测到字段: ${currentHeaders.length} 个<br>
+                            <small>字段列表: ${currentHeaders.join(', ')}</small>
+                        `;
+
+                        // 显示字段映射界面
+                        showFieldMapping();
+                    }
+                });
+            }
+        }
+
+        // 显示字段映射界面
+        function showFieldMapping() {
+            const fieldMapping = document.getElementById('fieldMapping');
+
+            // 填充字段选择器
+            const fieldSelectors = [
+                'fromField', 'toField', 'amountField', 'timeField',
+                'fromBankField', 'toBankField', 'transTypeField', 'launderingField'
+            ];
+
+            fieldSelectors.forEach(selectorId => {
+                const selector = document.getElementById(selectorId);
+                selector.innerHTML = '';
+
+                // 添加空选项（除了必需字段）
+                if (!['fromField', 'toField', 'amountField'].includes(selectorId)) {
+                    selector.appendChild(new Option('不使用', ''));
+                } else {
+                    selector.appendChild(new Option('请选择...', ''));
+                }
+
+                // 添加所有字段选项
+                currentHeaders.forEach(header => {
+                    selector.appendChild(new Option(header, header));
+                });
+            });
+
+            // 自动检测并设置默认值
+            autoDetectFields();
+
+            fieldMapping.style.display = 'block';
+        }
+
+        // 自动识别字段
+        function identifyFields(headers) {
+            const identified = {};
+
+            for (const [field, patterns] of Object.entries(fieldMappings)) {
+                for (const header of headers) {
+                    const lowerHeader = header.toLowerCase();
+                    if (patterns.some(pattern => lowerHeader.includes(pattern))) {
+                        identified[field] = header;
+                        break;
+                    }
+                }
+            }
+
+            return identified;
+        }
+
+        // 自动检测字段
+        function autoDetectFields() {
+            const detected = identifyFields(currentHeaders);
+
+            // 设置检测到的字段
+            if (detected.from) document.getElementById('fromField').value = detected.from;
+            if (detected.to) document.getElementById('toField').value = detected.to;
+            if (detected.amount) document.getElementById('amountField').value = detected.amount;
+            if (detected.time) document.getElementById('timeField').value = detected.time;
+            if (detected.fromBank) document.getElementById('fromBankField').value = detected.fromBank;
+            if (detected.toBank) document.getElementById('toBankField').value = detected.toBank;
+            if (detected.transType) document.getElementById('transTypeField').value = detected.transType;
+            if (detected.laundering) document.getElementById('launderingField').value = detected.laundering;
+        }
+
+        // 自动检测并应用
+        function autoDetectAndApply() {
+            autoDetectFields();
+        }
+
+        // 应用字段映射
+        function applyFieldMapping() {
+            const mappedFields = {
+                from: document.getElementById('fromField').value,
+                to: document.getElementById('toField').value,
+                amount: document.getElementById('amountField').value,
+                time: document.getElementById('timeField').value || null,
+                fromBank: document.getElementById('fromBankField').value || null,
+                toBank: document.getElementById('toBankField').value || null,
+                transType: document.getElementById('transTypeField').value || null,
+                laundering: document.getElementById('launderingField').value || null
+            };
+
+            // 验证必需字段
+            if (!mappedFields.from || !mappedFields.to || !mappedFields.amount) {
+                alert('请选择发送方账户、接收方账户和交易金额字段');
+                return;
+            }
+
+            // 隐藏映射界面
+            document.getElementById('fieldMapping').style.display = 'none';
+
+            // 更新数据信息显示
+            document.getElementById('dataInfo').innerHTML = `
+                <strong>数据已加载</strong><br>
+                交易记录: ${currentRawData.length} 条<br>
+                映射字段: 发送方(${mappedFields.from}), 接收方(${mappedFields.to}), 金额(${mappedFields.amount})
+                ${mappedFields.time ? `, 时间(${mappedFields.time})` : ''}
+            `;
+
+            // 处理数据
+            processData(currentRawData, mappedFields);
+        }
+
+        // 取消字段映射
+        function cancelFieldMapping() {
+            document.getElementById('fieldMapping').style.display = 'none';
+            document.getElementById('dataInfo').style.display = 'none';
+            document.getElementById('csvFile').value = '';
+        }
+
+        // 处理数据
+        function processData(data, fields) {
+            rawData = data;
+
+            // 构建图数据
+            buildGraphData(fields);
+
+            // 初始化可视化
+            initializeVisualization();
+
+            // 更新统计信息
+            updateStats();
+
+            // 自动运行初始分析
+            setTimeout(() => {
+                runCommunityDetection();
+                detectSuspiciousPatterns();
+            }, 500);
+        }
+
+        // 构建图数据
+        function buildGraphData(fields) {
+            const nodeMap = new Map();
+            const linkMap = new Map();
+
+            rawData.forEach(row => {
+                const from = row[fields.from];
+                const to = row[fields.to];
+                const amount = parseFloat(row[fields.amount]) || 0;
+                const time = fields.time ? row[fields.time] : null;
+                const fromBank = fields.fromBank ? row[fields.fromBank] : null;
+                const toBank = fields.toBank ? row[fields.toBank] : null;
+                const transType = fields.transType ? row[fields.transType] : null;
+                const laundering = fields.laundering ? row[fields.laundering] : null;
+
+                if (from && to && amount > 0) {
+                    // 添加节点
+                    if (!nodeMap.has(from)) {
+                        nodeMap.set(from, {
+                            id: from,
+                            inAmount: 0,
+                            outAmount: 0,
+                            transactionCount: 0,
+                            banks: new Set(),
+                            transactionTypes: new Set(),
+                            launderingFlags: new Set()
+                        });
+                    }
+                    if (!nodeMap.has(to)) {
+                        nodeMap.set(to, {
+                            id: to,
+                            inAmount: 0,
+                            outAmount: 0,
+                            transactionCount: 0,
+                            banks: new Set(),
+                            transactionTypes: new Set(),
+                            launderingFlags: new Set()
+                        });
+                    }
+
+                    // 更新节点统计
+                    const fromNode = nodeMap.get(from);
+                    const toNode = nodeMap.get(to);
+
+                    fromNode.outAmount += amount;
+                    fromNode.transactionCount++;
+                    if (fromBank) fromNode.banks.add(fromBank);
+                    if (transType) fromNode.transactionTypes.add(transType);
+                    if (laundering) fromNode.launderingFlags.add(laundering);
+
+                    toNode.inAmount += amount;
+                    toNode.transactionCount++;
+                    if (toBank) toNode.banks.add(toBank);
+                    if (transType) toNode.transactionTypes.add(transType);
+                    if (laundering) toNode.launderingFlags.add(laundering);
+
+                    // 添加边
+                    const linkKey = `${from}-${to}`;
+                    if (!linkMap.has(linkKey)) {
+                        linkMap.set(linkKey, {
+                            source: from,
+                            target: to,
+                            totalAmount: 0,
+                            count: 0,
+                            transactions: [],
+                            transactionTypes: new Set(),
+                            launderingFlags: new Set()
+                        });
+                    }
+
+                    const link = linkMap.get(linkKey);
+                    link.totalAmount += amount;
+                    link.count++;
+                    link.transactions.push({
+                        amount,
+                        time,
+                        fromBank,
+                        toBank,
+                        transType,
+                        laundering
+                    });
+                    if (transType) link.transactionTypes.add(transType);
+                    if (laundering) link.launderingFlags.add(laundering);
+                }
+            });
+
+            // 转换 Set 为数组
+            nodes = Array.from(nodeMap.values()).map(node => ({
+                ...node,
+                banks: Array.from(node.banks),
+                transactionTypes: Array.from(node.transactionTypes),
+                launderingFlags: Array.from(node.launderingFlags)
+            }));
+
+            links = Array.from(linkMap.values()).map(link => ({
+                ...link,
+                transactionTypes: Array.from(link.transactionTypes),
+                launderingFlags: Array.from(link.launderingFlags)
+            }));
+
+            // 计算节点风险评分
+            calculateRiskScores();
+        }
+
+        // 计算风险评分 - 调整评分逻辑
+        function calculateRiskScores() {
+            // 先计算全局统计用于相对评分
+            const allAmounts = nodes.map(n => n.inAmount + n.outAmount);
+            const avgTotalAmount = allAmounts.reduce((sum, amt) => sum + amt, 0) / allAmounts.length;
+            const allTransactionCounts = nodes.map(n => n.transactionCount);
+            const avgTransactionCount = allTransactionCounts.reduce((sum, count) => sum + count, 0) / allTransactionCounts.length;
+
+            nodes.forEach(node => {
+                let score = 0;
+                const reasons = [];
+
+                // 交易量异常 - 调整阈值
+                const totalAmount = node.inAmount + node.outAmount;
+                if (totalAmount > avgTotalAmount * 8) {  // 从5倍调整为8倍
+                    score += 25;  // 从30降为25
+                    reasons.push('交易量异常');
+                }
+
+                // 交易频率异常 - 调整阈值
+                if (node.transactionCount > avgTransactionCount * 6) {  // 使用相对阈值
+                    score += 20;
+                    reasons.push('高频交易');
+                }
+
+                // 资金流向不平衡 - 调整阈值
+                const flowRatio = node.outAmount / (node.inAmount + 1);
+                if (flowRatio > 20 || flowRatio < 0.05) {  // 调整阈值
+                    score += 20;  // 从25降为20
+                    reasons.push('资金流向不平衡');
+                }
+
+                // 连接数量 - 使用相对阈值
+                const connections = links.filter(l =>
+                    l.source === node.id || l.target === node.id
+                ).length;
+                const avgConnections = links.length * 2 / nodes.length;
+                if (connections > avgConnections * 4) {  // 使用相对阈值
+                    score += 20;  // 从25降为20
+                    reasons.push('复杂网络结构');
+                }
+
+                // 涉及多家银行 - 调整阈值
+                if (node.banks && node.banks.length > 4) {  // 从3调整为4
+                    score += 10;  // 从15降为10
+                    reasons.push('涉及多家银行');
+                }
+
+                // 洗钱标记 - 降低分数
+                if (node.launderingFlags && node.launderingFlags.some(flag =>
+                    flag === '1' || flag === 'true' || flag === 'yes' ||
+                    (typeof flag === 'string' && flag.toLowerCase().includes('launder'))
+                )) {
+                    score += 35;  // 从50降为35
+                    reasons.push('洗钱标记');
+                }
+
+                // 交易类型多样性 - 调整阈值
+                if (node.transactionTypes && node.transactionTypes.length > 6) {  // 从5调整为6
+                    score += 8;  // 从10降为8
+                    reasons.push('交易类型复杂');
+                }
+
+                riskScores.set(node.id, {
+                    score: Math.min(score, 100),
+                    reasons: reasons
+                });
+            });
+        }
+
+        // 初始化可视化
+        function initializeVisualization() {
+            const container = document.getElementById('graph-container');
+
+            // 等待容器渲染完成再获取尺寸
+            setTimeout(() => {
+                const width = container.clientWidth || 800;
+                const height = container.clientHeight || 600;
+
+                // 清除已有内容
+                d3.select('#graph').selectAll('*').remove();
+
+                svg = d3.select('#graph')
+                    .attr('width', width)
+                    .attr('height', height)
+                    .style('width', '100%')
+                    .style('height', '100%');
+
+                // 移动端触摸优化
+                const isMobile = window.innerWidth <= 768;
+
+                // 添加缩放功能
+                const zoom = d3.zoom()
+                    .scaleExtent([0.1, 4])
+                    .on('zoom', (event) => {
+                        g.attr('transform', event.transform);
+                    });
+
+                svg.call(zoom);
+
+                g = svg.append('g');
+
+                // 创建力导向图，移动端参数调整
+                const linkDistance = isMobile ? 60 : 100;
+                const chargeStrength = isMobile ? -200 : -300;
+                const collisionRadius = isMobile ? 20 : 30;
+
+                // 识别孤立节点和连接节点
+                const connectedNodes = new Set();
+                links.forEach(link => {
+                    connectedNodes.add(link.source.id || link.source);
+                    connectedNodes.add(link.target.id || link.target);
+                });
+
+                // 为孤立节点创建特殊的力
+                const isolatedNodes = nodes.filter(n => !connectedNodes.has(n.id));
+                const connectedNodesList = nodes.filter(n => connectedNodes.has(n.id));
+
+                simulation = d3.forceSimulation(nodes)
+                    .force('link', d3.forceLink(links).id(d => d.id).distance(linkDistance))
+                    .force('charge', d3.forceManyBody().strength(d => {
+                        // 孤立节点使用较弱的排斥力
+                        return connectedNodes.has(d.id) ? chargeStrength : chargeStrength * 0.3;
+                    }))
+                    .force('center', d3.forceCenter(width / 2, height / 2))
+                    .force('collision', d3.forceCollide().radius(collisionRadius))
+                    .force('x', d3.forceX(d => {
+                        if (connectedNodes.has(d.id)) {
+                            return width / 2; // 连接节点向中心聚集
+                        } else {
+                            // 孤立节点围绕主要区域分布
+                            const angle = (nodes.indexOf(d) / isolatedNodes.length) * 2 * Math.PI;
+                            return width / 2 + Math.cos(angle) * Math.min(width, height) * 0.3;
+                        }
+                    }).strength(d => connectedNodes.has(d.id) ? 0.1 : 0.3))
+                    .force('y', d3.forceY(d => {
+                        if (connectedNodes.has(d.id)) {
+                            return height / 2; // 连接节点向中心聚集
+                        } else {
+                            // 孤立节点围绕主要区域分布
+                            const angle = (nodes.indexOf(d) / isolatedNodes.length) * 2 * Math.PI;
+                            return height / 2 + Math.sin(angle) * Math.min(width, height) * 0.3;
+                        }
+                    }).strength(d => connectedNodes.has(d.id) ? 0.1 : 0.3));
+
+                updateVisualization();
+                updateLegend();
+
+                // 窗口大小改变时重新调整
+                window.addEventListener('resize', debounce(handleResize, 300));
+            }, 100);
+        }
+
+        // 处理窗口大小改变
+        function handleResize() {
+            if (simulation && svg) {
+                const container = document.getElementById('graph-container');
+                const width = container.clientWidth || 800;
+                const height = container.clientHeight || 600;
+
+                svg.attr('width', width).attr('height', height);
+                simulation.force('center', d3.forceCenter(width / 2, height / 2));
+                simulation.force('x', d3.forceX(width / 2).strength(0.1));
+                simulation.force('y', d3.forceY(height / 2).strength(0.1));
+                simulation.alpha(0.3).restart();
+            }
+        }
+
+        // 防抖函数
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // 更新可视化
+        function updateVisualization() {
+            const amountThreshold = parseFloat(document.getElementById('amountThreshold').value);
+            const countThreshold = parseInt(document.getElementById('countThreshold').value);
+
+            // 过滤边
+            const filteredLinks = links.filter(d =>
+                d.totalAmount >= amountThreshold && d.count >= countThreshold
+            );
+
+            // 获取活跃节点
+            const activeNodes = new Set();
+            filteredLinks.forEach(link => {
+                activeNodes.add(link.source.id || link.source);
+                activeNodes.add(link.target.id || link.target);
+            });
+
+            const filteredNodes = nodes.filter(d => activeNodes.has(d.id));
+
+            // 更新链接
+            link = g.selectAll('.link')
+                .data(filteredLinks, d => `${d.source.id || d.source}-${d.target.id || d.target}`);
+
+            link.exit().remove();
+
+            const linkEnter = link.enter()
+                .append('line')
+                .attr('class', 'link');
+
+            link = linkEnter.merge(link)
+                .attr('stroke-width', d => Math.sqrt(d.count))
+                .attr('stroke', d => {
+                    const avgAmount = d.totalAmount / d.count;
+                    return avgAmount > 50000 ? '#ff4444' : '#999';
+                })
+                .on('mouseover', showLinkTooltip)
+                .on('mouseout', hideTooltip);
+
+            // 更新节点
+            node = g.selectAll('.node')
+                .data(filteredNodes, d => d.id);
+
+            node.exit().remove();
+
+            // 移动端触摸优化
+            function isMobile() {
+                return window.innerWidth <= 768;
+            }
+
+            // 修改节点创建，增加移动端支持
+            const nodeEnter = node.enter()
+                .append('circle')
+                .attr('class', 'node')
+                .call(d3.drag()
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended));
+
+            node = nodeEnter.merge(node)
+                .attr('r', d => {
+                    const baseSize = Math.sqrt(d.transactionCount) * 3 + 5;
+                    return isMobile() ? Math.max(baseSize, 8) : baseSize; // 移动端最小8px
+                })
+                .attr('fill', d => getNodeColor(d))
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 2)
+                .on('click', showNodeDetails)
+                .on('mouseover', isMobile() ? null : showNodeTooltip) // 移动端禁用hover
+                .on('mouseout', isMobile() ? null : hideTooltip)
+                .on('touchstart', isMobile() ? showNodeTooltip : null) // 移动端使用触摸
+                .on('touchend', isMobile() ? function () {
+                    setTimeout(hideTooltip, 2000); // 2秒后自动隐藏
+                } : null);
+
+            // 更新标签
+            labels = g.selectAll('.label')
+                .data(filteredNodes, d => d.id);
+
+            labels.exit().remove();
+
+            const labelEnter = labels.enter()
+                .append('text')
+                .attr('class', 'label')
+                .attr('text-anchor', 'middle')
+                .attr('dy', -15)
+                .style('font-size', '10px')
+                .style('pointer-events', 'none');
+
+            labels = labelEnter.merge(labels)
+                .text(d => d.id.length > 10 ? d.id.substring(0, 10) + '...' : d.id);
+
+            // 更新力导向图
+            simulation.nodes(filteredNodes);
+            simulation.force('link').links(filteredLinks);
+            simulation.alpha(1).restart();
+
+            simulation.on('tick', () => {
+                link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+
+                node
+                    .attr('cx', d => d.x)
+                    .attr('cy', d => d.y);
+
+                labels
+                    .attr('x', d => d.x)
+                    .attr('y', d => d.y);
+            });
+        }
+
+        // 获取节点颜色 - 修改优先级
+        function getNodeColor(node) {
+            // 优先显示风险评分，除非用户选择社区模式
+            if (colorMode === 'community' && currentCommunities.size > 0 && currentCommunities.has(node.id)) {
+                const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+                    '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
+                return colors[currentCommunities.get(node.id) % colors.length];
+            }
+
+            // 默认显示风险评分颜色
+            const riskData = riskScores.get(node.id) || { score: 0 };
+            const risk = riskData.score;
+            if (risk > 60) return '#ff4444';  // 从70调整为60
+            if (risk > 30) return '#ffaa00';  // 从40调整为30
+            return '#00c851';
+        }
+
+        // 拖拽功能
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+
+        // 工具提示
+        function showNodeTooltip(event, d) {
+            const tooltip = document.getElementById('tooltip');
+            const riskData = riskScores.get(d.id) || { score: 0, reasons: [] };
+
+            let tooltipContent = `
+                <strong>${d.id}</strong><br>
+                收入: ¥${d.inAmount.toFixed(2)}<br>
+                支出: ¥${d.outAmount.toFixed(2)}<br>
+                交易次数: ${d.transactionCount}<br>
+                风险评分: ${riskData.score}
+            `;
+
+            if (d.banks && d.banks.length > 0) {
+                tooltipContent += `<br>涉及银行: ${d.banks.slice(0, 3).join(', ')}${d.banks.length > 3 ? '...' : ''}`;
+            }
+
+            if (d.transactionTypes && d.transactionTypes.length > 0) {
+                tooltipContent += `<br>交易类型: ${d.transactionTypes.slice(0, 2).join(', ')}${d.transactionTypes.length > 2 ? '...' : ''}`;
+            }
+
+            if (riskData.reasons && riskData.reasons.length > 0) {
+                tooltipContent += `<br><small>风险原因: ${riskData.reasons.slice(0, 2).join(', ')}</small>`;
+            }
+
+            tooltip.innerHTML = tooltipContent;
+            tooltip.style.left = (event.pageX + 10) + 'px';
+            tooltip.style.top = (event.pageY - 10) + 'px';
+            tooltip.style.opacity = 1;
+        }
+
+        function showLinkTooltip(event, d) {
+            const tooltip = document.getElementById('tooltip');
+
+            tooltip.innerHTML = `
+                <strong>${d.source.id || d.source} → ${d.target.id || d.target}</strong><br>
+                总金额: ¥${d.totalAmount.toFixed(2)}<br>
+                交易次数: ${d.count}<br>
+                平均金额: ¥${(d.totalAmount / d.count).toFixed(2)}
+            `;
+
+            tooltip.style.left = (event.pageX + 10) + 'px';
+            tooltip.style.top = (event.pageY - 10) + 'px';
+            tooltip.style.opacity = 1;
+        }
+
+        function hideTooltip() {
+            document.getElementById('tooltip').style.opacity = 0;
+        }
+
+        // 显示节点详情
+        function showNodeDetails(event, d) {
+            const relatedLinks = links.filter(l =>
+                l.source.id === d.id || l.target.id === d.id ||
+                l.source === d.id || l.target === d.id
+            );
+
+            const riskData = riskScores.get(d.id) || { score: 0, reasons: [] };
+
+            let detailsHtml = `
+                <div class="analysis-result">
+                    <h4>账户详情: ${d.id}</h4>
+                    <p>总收入: ¥${d.inAmount.toFixed(2)}</p>
+                    <p>总支出: ¥${d.outAmount.toFixed(2)}</p>
+                    <p>净流入: ¥${(d.inAmount - d.outAmount).toFixed(2)}</p>
+                    <p>交易次数: ${d.transactionCount}</p>
+                    <p>连接账户数: ${relatedLinks.length}</p>
+                    <p>风险评分: <span class="risk-indicator risk-${getRiskLevel(d.id)}"></span>${riskData.score}</p>
+            `;
+
+            if (d.banks && d.banks.length > 0) {
+                detailsHtml += `<p>涉及银行: ${d.banks.join(', ')}</p>`;
+            }
+
+            if (d.transactionTypes && d.transactionTypes.length > 0) {
+                detailsHtml += `<p>交易类型: ${d.transactionTypes.join(', ')}</p>`;
+            }
+
+            if (d.launderingFlags && d.launderingFlags.length > 0) {
+                detailsHtml += `<p>洗钱标记: ${d.launderingFlags.join(', ')}</p>`;
+            }
+
+            if (riskData.reasons && riskData.reasons.length > 0) {
+                detailsHtml += `<p><strong>风险因素:</strong> ${riskData.reasons.join(', ')}</p>`;
+            }
+
+            detailsHtml += `</div>`;
+
+            addAnalysisResult(detailsHtml);
+
+            // 高亮相关连接
+            highlightConnections(d);
+        }
+
+        // 高亮连接
+        function highlightConnections(targetNode) {
+            node.style('opacity', d => {
+                if (d.id === targetNode.id) return 1;
+                const connected = links.some(l =>
+                    (l.source.id === targetNode.id && l.target.id === d.id) ||
+                    (l.target.id === targetNode.id && l.source.id === d.id)
+                );
+                return connected ? 1 : 0.3;
+            });
+
+            link.style('opacity', d => {
+                return (d.source.id === targetNode.id || d.target.id === targetNode.id) ? 1 : 0.1;
+            });
+
+            setTimeout(() => {
+                node.style('opacity', 1);
+                link.style('opacity', 0.6);
+            }, 3000);
+        }
+
+        // 社区检测（Louvain算法简化版）
+        function runCommunityDetection() {
+            currentCommunities.clear();
+
+            // 简化的社区检测
+            const visited = new Set();
+            let communityId = 0;
+
+            nodes.forEach(node => {
+                if (!visited.has(node.id)) {
+                    const community = new Set();
+                    const queue = [node.id];
+
+                    while (queue.length > 0) {
+                        const current = queue.shift();
+                        if (!visited.has(current)) {
+                            visited.add(current);
+                            community.add(current);
+                            currentCommunities.set(current, communityId);
+
+                            // 添加强连接的邻居
+                            links.forEach(link => {
+                                if (link.count > 5) {
+                                    if (link.source.id === current || link.source === current) {
+                                        const target = link.target.id || link.target;
+                                        if (!visited.has(target)) queue.push(target);
+                                    }
+                                    if (link.target.id === current || link.target === current) {
+                                        const source = link.source.id || link.source;
+                                        if (!visited.has(source)) queue.push(source);
+                                    }
+                                }
+                            });
+                        }
+                    }
+
+                    if (community.size > 1) {
+                        communityId++;
+                    }
+                }
+            });
+
+            updateVisualization();
+
+            const html = `
+                <div class="analysis-result">
+                    <h4>社区检测结果</h4>
+                    <p>检测到 ${communityId} 个社区</p>
+                    <p>最大社区包含 ${Math.max(...Array.from(currentCommunities.values()))} 个账户</p>
+                </div>
+            `;
+            addAnalysisResult(html);
+        }
+
+        // 中心性分析
+        function runCentralityAnalysis() {
+            const centrality = new Map();
+
+            // 度中心性
+            nodes.forEach(node => {
+                const degree = links.filter(l =>
+                    l.source.id === node.id || l.target.id === node.id ||
+                    l.source === node.id || l.target === node.id
+                ).length;
+
+                centrality.set(node.id, {
+                    degree: degree,
+                    betweenness: 0,
+                    closeness: 0
+                });
+            });
+
+            // 找出最重要的节点
+            const topNodes = Array.from(centrality.entries())
+                .sort((a, b) => b[1].degree - a[1].degree)
+                .slice(0, 5);
+
+            const html = `
+                <div class="analysis-result">
+                    <h4>中心性分析结果</h4>
+                    <p><strong>最重要的账户:</strong></p>
+                    <ul class="account-list">
+                        ${topNodes.map(([id, c]) =>
+                `<li class="account-item">
+                                ${id} (度: ${c.degree})
+                            </li>`
+            ).join('')}
+                    </ul>
+                </div>
+            `;
+            addAnalysisResult(html);
+        }
+
+        // 环路检测 - 优化避免重复计算
+        function detectCycles() {
+            const cycles = new Set(); // 使用Set避免重复
+            const visited = new Map(); // 记录访问状态
+            const recursionStack = new Set(); // 递归栈
+
+            // 构建邻接表提高效率
+            const adjacencyList = new Map();
+            nodes.forEach(node => {
+                adjacencyList.set(node.id, []);
+            });
+
+            links.forEach(link => {
+                const sourceId = link.source.id || link.source;
+                const targetId = link.target.id || link.target;
+                if (!adjacencyList.get(sourceId)) adjacencyList.set(sourceId, []);
+                adjacencyList.get(sourceId).push({
+                    target: targetId,
+                    amount: link.totalAmount,
+                    count: link.count
+                });
+            });
+
+            function dfs(nodeId, path, startNode, pathAmounts) {
+                // 限制路径长度和总金额，提高效率
+                if (path.length > 6) return;
+
+                // 检查是否形成环路
+                if (path.length > 2 && nodeId === startNode) {
+                    const totalAmount = pathAmounts.reduce((sum, amt) => sum + amt, 0);
+                    if (totalAmount > 10000) { // 只关注大额环路
+                        const cycleKey = [...path].sort().join('-');
+                        if (!cycles.has(cycleKey)) {
+                            cycles.add({
+                                key: cycleKey,
+                                path: [...path],
+                                totalAmount: totalAmount,
+                                avgAmount: totalAmount / path.length
+                            });
+                        }
+                    }
+                    return;
+                }
+
+                if (recursionStack.has(nodeId)) return; // 避免无限递归
+
+                recursionStack.add(nodeId);
+                path.push(nodeId);
+
+                const neighbors = adjacencyList.get(nodeId) || [];
+                neighbors.forEach(neighbor => {
+                    // 只处理符合条件的边
+                    if (neighbor.amount > 1000) { // 只考虑大额交易
+                        pathAmounts.push(neighbor.amount);
+                        dfs(neighbor.target, path, startNode, pathAmounts);
+                        pathAmounts.pop();
+                    }
+                });
+
+                path.pop();
+                recursionStack.delete(nodeId);
+            }
+
+            // 只检查高风险节点作为起点，提高效率
+            const highRiskNodes = nodes.filter(node => {
+                const riskData = riskScores.get(node.id) || { score: 0 };
+                return riskData.score > 40;
+            }).slice(0, 20); // 限制检测数量
+
+            highRiskNodes.forEach(node => {
+                visited.clear();
+                recursionStack.clear();
+                dfs(node.id, [], node.id, []);
+            });
+
+            const cycleArray = Array.from(cycles);
+
+            // 按风险评分排序
+            cycleArray.sort((a, b) => b.totalAmount - a.totalAmount);
+
+            const html = `
+                <div class="analysis-result">
+                    <h4>环路检测结果</h4>
+                    <p>检测到 ${cycleArray.length} 个资金环路</p>
+                    <p>检测范围: ${highRiskNodes.length} 个高风险节点</p>
+                    ${cycleArray.slice(0, 5).map(cycle =>
+                `<div style="margin: 8px 0; padding: 8px; background: #fff3cd; border-radius: 4px;">
+                            <strong>环路:</strong> ${cycle.path.join(' → ')}<br>
+                            <small>总金额: ¥${cycle.totalAmount.toFixed(2)} | 平均: ¥${cycle.avgAmount.toFixed(2)}</small>
+                        </div>`
+            ).join('')}
+                    ${cycleArray.length > 5 ? `<p><small>...还有 ${cycleArray.length - 5} 个环路</small></p>` : ''}
+                </div>
+            `;
+            addAnalysisResult(html);
+        }
+
+        // 异常检测
+        function detectAnomalies() {
+            const anomalies = [];
+
+            // 检测异常大额交易
+            links.forEach(link => {
+                const avgAmount = link.totalAmount / link.count;
+                if (avgAmount > 50000) {
+                    anomalies.push({
+                        type: '大额交易',
+                        description: `${link.source.id || link.source} → ${link.target.id || link.target}: 平均¥${avgAmount.toFixed(2)}`
+                    });
+                }
+            });
+
+            // 检测高频交易
+            nodes.forEach(node => {
+                if (node.transactionCount > 100) {
+                    anomalies.push({
+                        type: '高频交易',
+                        description: `${node.id}: ${node.transactionCount}笔交易`
+                    });
+                }
+            });
+
+            const html = `
+                <div class="analysis-result">
+                    <h4>异常检测结果</h4>
+                    <p>发现 ${anomalies.length} 个异常</p>
+                    ${anomalies.slice(0, 10).map(a =>
+                `<p><strong>${a.type}:</strong> ${a.description}</p>`
+            ).join('')}
+                </div>
+            `;
+            addAnalysisResult(html);
+        }
+
+        // 检测可疑模式
+        function detectSuspiciousPatterns() {
+            suspiciousPatterns = [];
+
+            // 1. 快速资金流转
+            detectRapidTransfers();
+
+            // 2. 分层结构
+            detectLayeringPatterns();
+
+            // 3. 整合模式
+            detectIntegrationPatterns();
+
+            // 4. 异常交易时间
+            detectTimeAnomalies();
+
+            displayPatterns();
+        }
+
+        function detectRapidTransfers() {
+            nodes.forEach(node => {
+                const inLinks = links.filter(l => l.target.id === node.id || l.target === node.id);
+                const outLinks = links.filter(l => l.source.id === node.id || l.source === node.id);
+
+                if (inLinks.length > 0 && outLinks.length > 0) {
+                    const flowRatio = node.outAmount / (node.inAmount + 1);
+                    const totalFlow = node.inAmount + node.outAmount;
+
+                    // 改进的检测逻辑
+                    const conditions = [
+                        flowRatio > 0.85 && flowRatio < 1.15, // 流入流出平衡
+                        node.transactionCount > 15, // 交易频繁
+                        totalFlow > 50000, // 总流量大
+                        inLinks.length > 3 && outLinks.length > 3 // 多个来源和去向
+                    ];
+
+                    const matchedConditions = conditions.filter(Boolean).length;
+
+                    if (matchedConditions >= 3) {
+                        // 计算时间集中度（如果有时间数据）
+                        let timeConcentration = 0;
+                        const allTransactions = [...inLinks, ...outLinks]
+                            .flatMap(link => link.transactions || [])
+                            .filter(t => t.time);
+
+                        if (allTransactions.length > 0) {
+                            const dates = allTransactions.map(t => new Date(t.time).getTime());
+                            const timeRange = Math.max(...dates) - Math.min(...dates);
+                            timeConcentration = timeRange < 7 * 24 * 60 * 60 * 1000 ? 1 : 0; // 一周内
+                        }
+
+                        const riskLevel = matchedConditions >= 4 || timeConcentration ? 'high' : 'medium';
+
+                        suspiciousPatterns.push({
+                            type: '快速资金流转',
+                            accounts: [node.id],
+                            risk: riskLevel,
+                            description: `账户 ${node.id} 资金快速流转 (流入:¥${node.inAmount.toFixed(2)}, 流出:¥${node.outAmount.toFixed(2)}, 交易:${node.transactionCount}次)`,
+                            details: {
+                                flowRatio: flowRatio.toFixed(3),
+                                totalFlow: totalFlow,
+                                inSources: inLinks.length,
+                                outTargets: outLinks.length,
+                                timeConcentrated: timeConcentration > 0
+                            }
+                        });
+                    }
+                }
+            });
+        }
+
+        function detectLayeringPatterns() {
+            // 检测多层转账
+            const paths = [];
+
+            function findPaths(start, end, path, depth) {
+                if (depth > 5) return;
+
+                if (start === end && path.length > 2) {
+                    paths.push([...path]);
+                    return;
+                }
+
+                links.forEach(link => {
+                    if (link.source.id === start || link.source === start) {
+                        const next = link.target.id || link.target;
+                        if (!path.includes(next)) {
+                            path.push(next);
+                            findPaths(next, end, path, depth + 1);
+                            path.pop();
+                        }
+                    }
+                });
+            }
+
+            // 检测复杂路径
+            nodes.slice(0, 20).forEach(node => {
+                findPaths(node.id, node.id, [node.id], 0);
+            });
+
+            if (paths.length > 0) {
+                suspiciousPatterns.push({
+                    type: '分层交易',
+                    accounts: paths[0],
+                    risk: 'high',
+                    description: `发现复杂的多层转账路径`
+                });
+            }
+        }
+
+        function detectIntegrationPatterns() {
+            // 检测资金汇集模式
+            nodes.forEach(node => {
+                const incomingLinks = links.filter(l => l.target.id === node.id || l.target === node.id);
+                const outgoingLinks = links.filter(l => l.source.id === node.id || l.source === node.id);
+
+                const incomingAccounts = incomingLinks.map(l => l.source.id || l.source);
+                const uniqueIncoming = [...new Set(incomingAccounts)];
+
+                // 改进的资金汇集检测
+                const conditions = [
+                    uniqueIncoming.length > 8, // 多个来源
+                    node.inAmount > 80000, // 大额流入
+                    outgoingLinks.length < incomingLinks.length / 2, // 汇集特征：流入多流出少
+                    node.inAmount > node.outAmount * 1.5 // 更多资金流入而非流出
+                ];
+
+                const matchedConditions = conditions.filter(Boolean).length;
+
+                if (matchedConditions >= 3) {
+                    // 分析交易时间模式
+                    let timePattern = '正常';
+                    const transactions = incomingLinks.flatMap(link => link.transactions || []);
+                    if (transactions.length > 0) {
+                        const timeGroups = transactions.reduce((groups, t) => {
+                            if (t.time) {
+                                const date = new Date(t.time).toDateString();
+                                groups[date] = (groups[date] || 0) + 1;
+                            }
+                            return groups;
+                        }, {});
+
+                        const maxDailyTransactions = Math.max(...Object.values(timeGroups));
+                        if (maxDailyTransactions > uniqueIncoming.length * 0.6) {
+                            timePattern = '时间集中';
+                        }
+                    }
+
+                    // 分析金额模式
+                    const amounts = incomingLinks.map(l => l.totalAmount);
+                    const avgAmount = amounts.reduce((sum, amt) => sum + amt, 0) / amounts.length;
+                    const amountVariance = amounts.reduce((sum, amt) => sum + Math.pow(amt - avgAmount, 2), 0) / amounts.length;
+                    const isUniformAmounts = amountVariance / (avgAmount * avgAmount) < 0.1; // 金额相似
+
+                    const riskLevel = matchedConditions >= 4 || timePattern === '时间集中' || isUniformAmounts ? 'high' : 'medium';
+
+                    suspiciousPatterns.push({
+                        type: '资金汇集',
+                        accounts: [node.id, ...uniqueIncoming.slice(0, 6)],
+                        risk: riskLevel,
+                        description: `账户 ${node.id} 资金汇集模式 (${uniqueIncoming.length}个来源, 总额¥${node.inAmount.toFixed(2)})`,
+                        details: {
+                            sourceCount: uniqueIncoming.length,
+                            totalInAmount: node.inAmount,
+                            avgIncomingAmount: avgAmount.toFixed(2),
+                            timePattern: timePattern,
+                            uniformAmounts: isUniformAmounts,
+                            flowRatio: (node.inAmount / (node.outAmount + 1)).toFixed(2)
+                        }
+                    });
+                }
+            });
+        }
+
+        function detectTimeAnomalies() {
+            const timeAnomalies = [];
+
+            // 收集所有有时间数据的交易
+            const timedTransactions = [];
+            links.forEach(link => {
+                if (link.transactions && link.transactions.length > 0) {
+                    link.transactions.forEach(transaction => {
+                        if (transaction.time) {
+                            timedTransactions.push({
+                                ...transaction,
+                                source: link.source.id || link.source,
+                                target: link.target.id || link.target,
+                                linkAmount: link.totalAmount
+                            });
+                        }
+                    });
+                }
+            });
+
+            if (timedTransactions.length > 0) {
+                // 分析时间模式
+                const hourlyDistribution = new Array(24).fill(0);
+                const dailyDistribution = new Array(7).fill(0); // 0=周日, 1=周一...
+                const nightTimeTransactions = [];
+                const weekendTransactions = [];
+                const highFrequencyPeriods = new Map();
+
+                timedTransactions.forEach(transaction => {
+                    const date = new Date(transaction.time);
+                    const hour = date.getHours();
+                    const dayOfWeek = date.getDay();
+                    const dateKey = date.toDateString();
+
+                    hourlyDistribution[hour]++;
+                    dailyDistribution[dayOfWeek]++;
+
+                    // 检测夜间交易 (23:00-06:00)
+                    if (hour >= 23 || hour <= 6) {
+                        nightTimeTransactions.push(transaction);
+                    }
+
+                    // 检测周末交易
+                    if (dayOfWeek === 0 || dayOfWeek === 6) {
+                        weekendTransactions.push(transaction);
+                    }
+
+                    // 统计每日交易频率
+                    highFrequencyPeriods.set(dateKey, (highFrequencyPeriods.get(dateKey) || 0) + 1);
+                });
+
+                // 检测异常模式
+                const totalTransactions = timedTransactions.length;
+                const nightTimeRatio = nightTimeTransactions.length / totalTransactions;
+                const weekendRatio = weekendTransactions.length / totalTransactions;
+
+                // 夜间交易异常
+                if (nightTimeRatio > 0.15 && nightTimeTransactions.length > 5) {
+                    const avgNightAmount = nightTimeTransactions.reduce((sum, t) => sum + t.amount, 0) / nightTimeTransactions.length;
+                    timeAnomalies.push({
+                        type: '夜间交易异常',
+                        count: nightTimeTransactions.length,
+                        ratio: (nightTimeRatio * 100).toFixed(1),
+                        avgAmount: avgNightAmount.toFixed(2),
+                        accounts: [...new Set(nightTimeTransactions.flatMap(t => [t.source, t.target]))].slice(0, 5),
+                        risk: nightTimeRatio > 0.3 ? 'high' : 'medium'
+                    });
+                }
+
+                // 周末交易异常
+                if (weekendRatio > 0.2 && weekendTransactions.length > 8) {
+                    timeAnomalies.push({
+                        type: '周末交易异常',
+                        count: weekendTransactions.length,
+                        ratio: (weekendRatio * 100).toFixed(1),
+                        accounts: [...new Set(weekendTransactions.flatMap(t => [t.source, t.target]))].slice(0, 5),
+                        risk: weekendRatio > 0.4 ? 'high' : 'medium'
+                    });
+                }
+
+                // 高频交易日检测
+                const highFrequencyDays = Array.from(highFrequencyPeriods.entries())
+                    .filter(([date, count]) => count > totalTransactions * 0.1)
+                    .sort((a, b) => b[1] - a[1]);
+
+                if (highFrequencyDays.length > 0) {
+                    timeAnomalies.push({
+                        type: '交易时间集中',
+                        details: highFrequencyDays.slice(0, 3).map(([date, count]) =>
+                            `${date}: ${count}笔交易`).join(', '),
+                        risk: 'medium'
+                    });
+                }
+
+                // 添加到可疑模式
+                timeAnomalies.forEach(anomaly => {
+                    suspiciousPatterns.push({
+                        type: '时间异常模式',
+                        accounts: anomaly.accounts || [],
+                        risk: anomaly.risk,
+                        description: `${anomaly.type}: ${anomaly.details || `${anomaly.count}笔交易(${anomaly.ratio}%)`}`
+                    });
+                });
+            } else {
+                // 没有时间数据时的提示
+                suspiciousPatterns.push({
+                    type: '时间异常模式',
+                    accounts: [],
+                    risk: 'low',
+                    description: '数据中缺少时间字段，无法进行时间模式分析'
+                });
+            }
+        }
+
+        function displayPatterns() {
+            const patternResults = document.getElementById('patternResults');
+
+            patternResults.innerHTML = suspiciousPatterns.map(pattern => `
+                <div class="pattern-item">
+                    <span class="risk-indicator risk-${pattern.risk}"></span>
+                    <strong>${pattern.type}</strong><br>
+                    ${pattern.description}<br>
+                    ${pattern.accounts.length > 0 ? `涉及账户: ${pattern.accounts.slice(0, 3).join(', ')}` : ''}
+                </div>
+            `).join('');
+        }
+
+        // 洗钱检测
+        function detectMoneyLaundering() {
+            const mlPatterns = [];
+
+            // 综合多个指标
+            nodes.forEach(node => {
+                let mlScore = 0;
+                const reasons = [];
+
+                // 1. 快速流转
+                const flowRatio = node.outAmount / (node.inAmount + 1);
+                if (flowRatio > 0.8 && flowRatio < 1.2 && node.transactionCount > 20) {
+                    mlScore += 30;
+                    reasons.push('资金快速流转');
+                }
+
+                // 2. 多个小额交易
+                const relatedLinks = links.filter(l =>
+                    l.source.id === node.id || l.target.id === node.id ||
+                    l.source === node.id || l.target === node.id
+                );
+                const avgAmount = relatedLinks.reduce((sum, l) => sum + l.totalAmount / l.count, 0) / relatedLinks.length;
+                if (avgAmount < 10000 && relatedLinks.length > 10) {
+                    mlScore += 25;
+                    reasons.push('多笔小额交易');
+                }
+
+                // 3. 复杂网络
+                if (relatedLinks.length > 15) {
+                    mlScore += 25;
+                    reasons.push('复杂交易网络');
+                }
+
+                // 4. 环路参与
+                // 简化检测
+                const hasLoop = relatedLinks.some(l1 =>
+                    relatedLinks.some(l2 =>
+                        l1.target === l2.source && l2.target === l1.source
+                    )
+                );
+                if (hasLoop) {
+                    mlScore += 20;
+                    reasons.push('参与资金环路');
+                }
+
+                if (mlScore > 50) {
+                    mlPatterns.push({
+                        account: node.id,
+                        score: mlScore,
+                        reasons: reasons
+                    });
+                }
+            });
+
+            // 排序并显示
+            mlPatterns.sort((a, b) => b.score - a.score);
+
+            const html = `
+                <div class="analysis-result">
+                    <h4>洗钱风险检测</h4>
+                    <p>发现 ${mlPatterns.length} 个高风险账户</p>
+                    ${mlPatterns.slice(0, 5).map(p => `
+                        <div style="margin: 10px 0; padding: 10px; background: #fff3cd; border-radius: 4px;">
+                            <strong>${p.account}</strong><br>
+                            风险评分: ${p.score}/100<br>
+                            风险因素: ${p.reasons.join(', ')}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            addAnalysisResult(html);
+        }
+
+        // 时间模式分析 - 增强版本
+        function analyzeTimePatterns() {
+            // 收集所有有时间数据的交易
+            const timedTransactions = [];
+            links.forEach(link => {
+                if (link.transactions && link.transactions.length > 0) {
+                    link.transactions.forEach(transaction => {
+                        if (transaction.time) {
+                            timedTransactions.push({
+                                ...transaction,
+                                source: link.source.id || link.source,
+                                target: link.target.id || link.target
+                            });
+                        }
+                    });
+                }
+            });
+
+            if (timedTransactions.length === 0) {
+                const html = `
+                    <div class="analysis-result">
+                        <h4>时间模式分析</h4>
+                        <p style="color: #ff9800;">数据中缺少时间字段，无法进行时间分析</p>
+                        <p>建议在数据中包含交易时间信息以获得更深入的分析结果</p>
+                    </div>
+                `;
+                addAnalysisResult(html);
+                return;
+            }
+
+            // 分析时间分布
+            const timePatterns = {
+                hourly: new Array(24).fill(0),
+                daily: new Array(7).fill(0),
+                monthly: new Array(12).fill(0),
+                weeklyAmount: new Array(7).fill(0),
+                hourlyAmount: new Array(24).fill(0)
+            };
+
+            const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+
+            timedTransactions.forEach(transaction => {
+                const date = new Date(transaction.time);
+                const hour = date.getHours();
+                const dayOfWeek = date.getDay();
+                const month = date.getMonth();
+                const amount = transaction.amount || 0;
+
+                timePatterns.hourly[hour]++;
+                timePatterns.daily[dayOfWeek]++;
+                timePatterns.monthly[month]++;
+                timePatterns.weeklyAmount[dayOfWeek] += amount;
+                timePatterns.hourlyAmount[hour] += amount;
+            });
+
+            // 创建可视化图表
+            const chartId = 'timeAnalysisChart_' + Date.now();
+
+            // 生成SVG图表
+            const createChart = () => {
+                const svgWidth = 800;
+                const svgHeight = 600;
+                const margin = { top: 40, right: 30, bottom: 80, left: 80 };
+                const chartWidth = svgWidth - margin.left - margin.right;
+                const chartHeight = svgHeight - margin.top - margin.bottom;
+
+                // 小时分布图
+                const hourlyData = timePatterns.hourly.map((count, hour) => ({
+                    hour: hour + '时',
+                    count: count,
+                    amount: timePatterns.hourlyAmount[hour]
+                }));
+
+                // 星期分布图
+                const dailyData = timePatterns.daily.map((count, day) => ({
+                    day: dayNames[day],
+                    count: count,
+                    amount: timePatterns.weeklyAmount[day]
+                }));
+
+                return `
+                    <div style="margin: 20px 0;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+                            <!-- 小时分布图 -->
+                            <div style="flex: 1; min-width: 300px;">
+                                <h5>24小时交易分布</h5>
+                                <svg width="400" height="200" style="border: 1px solid #ddd; background: #fff;">
+                                    <g transform="translate(40, 20)">
+                                        ${hourlyData.map((d, i) => {
+                    const barHeight = (d.count / Math.max(...timePatterns.hourly)) * 150;
+                    const x = i * 14;
+                    return `
+                                                <rect x="${x}" y="${150 - barHeight}" width="12" height="${barHeight}" 
+                                                      fill="${d.count > 0 ? (i >= 22 || i <= 6 ? '#ff4444' : '#4CAF50') : '#ddd'}"
+                                                      title="${d.hour}: ${d.count}笔交易, ¥${d.amount.toFixed(0)}">
+                                                </rect>
+                                                ${i % 4 === 0 ? `<text x="${x}" y="170" font-size="10" text-anchor="middle">${i}</text>` : ''}
+                                            `;
+                }).join('')}
+                                        <text x="180" y="190" text-anchor="middle" font-size="12">小时</text>
+                                        <text x="-30" y="80" text-anchor="middle" font-size="12" transform="rotate(-90, -30, 80)">交易笔数</text>
+                                    </g>
+                                </svg>
+                                <p style="font-size: 12px; color: #666;">红色: 夜间时段 (22:00-06:00)</p>
+                            </div>
+                            
+                            <!-- 星期分布图 -->
+                            <div style="flex: 1; min-width: 300px;">
+                                <h5>一周交易分布</h5>
+                                <svg width="400" height="200" style="border: 1px solid #ddd; background: #fff;">
+                                    <g transform="translate(60, 20)">
+                                        ${dailyData.map((d, i) => {
+                    const barHeight = (d.count / Math.max(...timePatterns.daily)) * 150;
+                    const x = i * 45;
+                    return `
+                                                <rect x="${x}" y="${150 - barHeight}" width="40" height="${barHeight}" 
+                                                      fill="${i === 0 || i === 6 ? '#ff7043' : '#2196F3'}"
+                                                      title="${d.day}: ${d.count}笔交易, ¥${d.amount.toFixed(0)}">
+                                                </rect>
+                                                <text x="${x + 20}" y="170" font-size="11" text-anchor="middle">${d.day}</text>
+                                            `;
+                }).join('')}
+                                        <text x="140" y="190" text-anchor="middle" font-size="12">星期</text>
+                                        <text x="-40" y="80" text-anchor="middle" font-size="12" transform="rotate(-90, -40, 80)">交易笔数</text>
+                                    </g>
+                                </svg>
+                                <p style="font-size: 12px; color: #666;">橙色: 周末, 蓝色: 工作日</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            };
+
+            // 统计分析
+            const totalTransactions = timedTransactions.length;
+            const totalAmount = timedTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
+
+            // 夜间交易统计
+            const nightTransactions = timePatterns.hourly.slice(22).concat(timePatterns.hourly.slice(0, 7));
+            const nightCount = nightTransactions.reduce((sum, count) => sum + count, 0);
+            const nightRatio = (nightCount / totalTransactions * 100).toFixed(1);
+
+            // 周末交易统计
+            const weekendCount = timePatterns.daily[0] + timePatterns.daily[6];
+            const weekendRatio = (weekendCount / totalTransactions * 100).toFixed(1);
+
+            // 峰值时段
+            const peakHour = timePatterns.hourly.indexOf(Math.max(...timePatterns.hourly));
+            const peakDay = timePatterns.daily.indexOf(Math.max(...timePatterns.daily));
+
+            const html = `
+                <div class="analysis-result">
+                    <h4>时间模式分析</h4>
+                    <p><strong>分析样本:</strong> ${totalTransactions} 笔交易，总金额 ¥${totalAmount.toFixed(2)}</p>
+                    
+                    <div style="margin: 15px 0;">
+                        <p><strong>关键指标:</strong></p>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>夜间交易 (22:00-06:00): ${nightCount} 笔 (${nightRatio}%)</li>
+                            <li>周末交易: ${weekendCount} 笔 (${weekendRatio}%)</li>
+                            <li>交易峰值时段: ${peakHour}:00-${peakHour + 1}:00</li>
+                            <li>交易峰值日期: ${dayNames[peakDay]}</li>
+                        </ul>
+                    </div>
+                    
+                    ${createChart()}
+                    
+                    <div style="margin-top: 15px;">
+                        <p><strong>风险提示:</strong></p>
+                        <ul style="margin: 10px 0; padding-left: 20px; font-size: 14px;">
+                            ${nightRatio > 15 ? '<li style="color: #ff4444;">夜间交易比例偏高，可能存在异常</li>' : '<li style="color: #4CAF50;">夜间交易比例正常</li>'}
+                            ${weekendRatio > 25 ? '<li style="color: #ff4444;">周末交易比例偏高，需要关注</li>' : '<li style="color: #4CAF50;">周末交易比例正常</li>'}
+                            ${Math.max(...timePatterns.hourly) > totalTransactions * 0.15 ? '<li style="color: #ff9800;">存在交易时间高度集中现象</li>' : '<li style="color: #4CAF50;">交易时间分布相对均匀</li>'}
+                        </ul>
+                    </div>
+                </div>
+            `;
+
+            addAnalysisResult(html);
+        }
+
+        // 更新统计
+        function updateStats() {
+            const totalAmount = links.reduce((sum, l) => sum + l.totalAmount, 0);
+            const avgTransaction = totalAmount / rawData.length;
+            const highRiskCount = Array.from(riskScores.values()).filter(riskData => riskData.score > 70).length;
+
+            document.getElementById('statsGrid').innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${nodes.length}</div>
+                    <div class="stat-label">账户总数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${rawData.length}</div>
+                    <div class="stat-label">交易总数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">¥${(totalAmount / 10000).toFixed(1)}万</div>
+                    <div class="stat-label">交易总额</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${highRiskCount}</div>
+                    <div class="stat-label">高风险账户</div>
+                </div>
+            `;
+        }
+
+        // 更新图例
+        function updateLegend() {
+            const legend = document.getElementById('legend');
+
+            legend.innerHTML = `
+                <h4 style="margin-bottom: 10px;">图例</h4>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #00c851;"></div>
+                    <span>低风险账户</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ffaa00;"></div>
+                    <span>中风险账户</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ff4444;"></div>
+                    <span>高风险账户</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #999;"></div>
+                    <span>正常交易</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ff4444;"></div>
+                    <span>大额交易</span>
+                </div>
+            `;
+        }
+
+        // 辅助函数
+        function getRiskLevel(nodeId) {
+            const riskData = riskScores.get(nodeId) || { score: 0 };
+            const risk = riskData.score;
+            if (risk > 70) return 'high';
+            if (risk > 40) return 'medium';
+            return 'low';
+        }
+
+        function addAnalysisResult(html) {
+            const container = document.getElementById('analysisResults');
+            container.innerHTML = html + container.innerHTML;
+
+            // 保持最多10个结果
+            const results = container.querySelectorAll('.analysis-result');
+            if (results.length > 10) {
+                results[results.length - 1].remove();
+            }
+        }
+
+        function updateThreshold() {
+            document.getElementById('amountValue').textContent =
+                document.getElementById('amountThreshold').value;
+            document.getElementById('countValue').textContent =
+                document.getElementById('countThreshold').value;
+
+            if (nodes.length > 0) {
+                updateVisualization();
+            }
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+
+        function searchAccount() {
+            const searchTerm = document.getElementById('searchAccount').value.toLowerCase();
+
+            if (searchTerm) {
+                node.style('opacity', d =>
+                    d.id.toLowerCase().includes(searchTerm) ? 1 : 0.3
+                );
+
+                link.style('opacity', d => {
+                    const sourceMatch = d.source.id.toLowerCase().includes(searchTerm);
+                    const targetMatch = d.target.id.toLowerCase().includes(searchTerm);
+                    return (sourceMatch || targetMatch) ? 1 : 0.1;
+                });
+            } else {
+                node.style('opacity', 1);
+                link.style('opacity', 0.6);
+            }
+        }
+
+        function filterNodes() {
+            const filterType = document.getElementById('nodeFilter').value;
+
+            node.style('display', d => {
+                if (filterType === 'all') return 'block';
+
+                const riskData = riskScores.get(d.id) || { score: 0 };
+                const risk = riskData.score;
+                if (filterType === 'high-risk' && risk > 70) return 'block';
+                if (filterType === 'medium-risk' && risk > 40 && risk <= 70) return 'block';
+                if (filterType === 'low-risk' && risk <= 40) return 'block';
+
+                return 'none';
+            });
+        }
+
+        function applyTimeFilter() {
+            // 实际应用中需要根据时间字段过滤数据
+            alert('时间过滤功能需要数据中包含时间字段');
+        }
+
+        function exportGraphData() {
+            const exportData = {
+                nodes: nodes.map(n => {
+                    const riskData = riskScores.get(n.id) || { score: 0, reasons: [] };
+                    return {
+                        id: n.id,
+                        inAmount: n.inAmount,
+                        outAmount: n.outAmount,
+                        transactionCount: n.transactionCount,
+                        riskScore: riskData.score,
+                        riskReasons: riskData.reasons,
+                        banks: n.banks || [],
+                        transactionTypes: n.transactionTypes || [],
+                        launderingFlags: n.launderingFlags || []
+                    };
+                }),
+                links: links.map(l => ({
+                    source: l.source.id || l.source,
+                    target: l.target.id || l.target,
+                    totalAmount: l.totalAmount,
+                    count: l.count,
+                    transactionTypes: l.transactionTypes || [],
+                    launderingFlags: l.launderingFlags || []
+                }))
+            };
+
+            const blob = new Blob([JSON.stringify(exportData, null, 2)],
+                { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'transaction_graph_data.json';
+            a.click();
+        }
+
+        function exportAnalysisReport() {
+            const report = {
+                summary: {
+                    totalAccounts: nodes.length,
+                    totalTransactions: rawData.length,
+                    totalAmount: links.reduce((sum, l) => sum + l.totalAmount, 0),
+                    highRiskAccounts: Array.from(riskScores.entries())
+                        .filter(([id, riskData]) => riskData.score > 70)
+                        .map(([id, riskData]) => ({
+                            id,
+                            score: riskData.score,
+                            reasons: riskData.reasons
+                        }))
+                },
+                suspiciousPatterns: suspiciousPatterns,
+                communities: Array.from(currentCommunities.entries()),
+                fieldMappings: {
+                    from: document.getElementById('fromField')?.value || '',
+                    to: document.getElementById('toField')?.value || '',
+                    amount: document.getElementById('amountField')?.value || '',
+                    time: document.getElementById('timeField')?.value || '',
+                    fromBank: document.getElementById('fromBankField')?.value || '',
+                    toBank: document.getElementById('toBankField')?.value || '',
+                    transType: document.getElementById('transTypeField')?.value || '',
+                    laundering: document.getElementById('launderingField')?.value || ''
+                },
+                timestamp: new Date().toISOString()
+            };
+
+            const blob = new Blob([JSON.stringify(report, null, 2)],
+                { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'transaction_analysis_report.json';
+            a.click();
+        }
+
+        // 添加颜色模式切换功能
+        function switchColorMode() {
+            colorMode = colorMode === 'risk' ? 'community' : 'risk';
+            if (nodes.length > 0) {
+                updateVisualization();
+            }
+
+            // 更新按钮文本
+            const button = document.getElementById('colorModeButton');
+            if (button) {
+                button.textContent = colorMode === 'risk' ? '切换到社区颜色' : '切换到风险颜色';
+            }
+        }
+
+        // 初始化聚类相关事件监听器
+        document.addEventListener('DOMContentLoaded', function () {
+            // ... 其他初始化代码 ...
+
+            // 添加新的事件监听器
+            if (document.getElementById('clusteringAlgorithm')) {
+                document.getElementById('clusteringAlgorithm').addEventListener('change', updateClusteringParams);
+                document.getElementById('clusterCount').addEventListener('input', updateClusteringThreshold);
+                document.getElementById('resolution').addEventListener('input', updateResolutionThreshold);
+            }
+        });
+
+        // 更新聚类参数显示
+        function updateClusteringParams() {
+            const algorithm = document.getElementById('clusteringAlgorithm').value;
+            const paramLabel = document.getElementById('paramLabel');
+            const clusterParams = document.getElementById('clusterParams');
+
+            if (algorithm === 'louvain' || algorithm === 'connected-components') {
+                clusterParams.style.display = 'none';
+            } else {
+                clusterParams.style.display = 'block';
+                paramLabel.textContent = algorithm === 'hierarchical' ? '聚类数量' : 'K值（聚类数）';
+            }
+        }
+
+        function updateClusteringThreshold() {
+            document.getElementById('clusterCountValue').textContent =
+                document.getElementById('clusterCount').value;
+        }
+
+        function updateResolutionThreshold() {
+            document.getElementById('resolutionValue').textContent =
+                document.getElementById('resolution').value;
+        }
+
+        // 运行选定的聚类算法
+        function runSelectedClustering() {
+            const algorithm = document.getElementById('clusteringAlgorithm').value;
+
+            switch (algorithm) {
+                case 'louvain':
+                    runLouvainCommunityDetection();
+                    break;
+                case 'connected-components':
+                    runConnectedComponents();
+                    break;
+                case 'kmeans':
+                    runKMeansClustering();
+                    break;
+                case 'hierarchical':
+                    runHierarchicalClustering();
+                    break;
+                case 'spectral':
+                    runSpectralClustering();
+                    break;
+                default:
+                    runLouvainCommunityDetection();
+            }
+        }
+
+        // 改进的Louvain社区检测算法
+        function runLouvainCommunityDetection() {
+            console.log('开始Louvain社区检测...');
+            currentCommunities.clear();
+
+            if (nodes.length === 0) {
+                alert('没有可用的节点数据');
+                return;
+            }
+
+            // 构建邻接矩阵和权重矩阵
+            const nodeIndex = new Map();
+            nodes.forEach((node, i) => nodeIndex.set(node.id, i));
+
+            const n = nodes.length;
+            const adjMatrix = Array(n).fill().map(() => Array(n).fill(0));
+            const weightMatrix = Array(n).fill().map(() => Array(n).fill(0));
+
+            // 填充邻接矩阵
+            links.forEach(link => {
+                const sourceId = link.source.id || link.source;
+                const targetId = link.target.id || link.target;
+                const sourceIdx = nodeIndex.get(sourceId);
+                const targetIdx = nodeIndex.get(targetId);
+
+                if (sourceIdx !== undefined && targetIdx !== undefined) {
+                    const weight = Math.log(link.totalAmount + 1) * link.count; // 综合考虑金额和次数
+                    adjMatrix[sourceIdx][targetIdx] = 1;
+                    adjMatrix[targetIdx][sourceIdx] = 1; // 无向图
+                    weightMatrix[sourceIdx][targetIdx] = weight;
+                    weightMatrix[targetIdx][sourceIdx] = weight;
+                }
+            });
+
+            // 初始化每个节点为独立社区
+            let communities = Array(n).fill().map((_, i) => i);
+            const resolution = parseFloat(document.getElementById('resolution')?.value || 1.0);
+
+            let totalWeight = 0;
+            for (let i = 0; i < n; i++) {
+                for (let j = i + 1; j < n; j++) {
+                    totalWeight += weightMatrix[i][j];
+                }
+            }
+
+            if (totalWeight === 0) {
+                console.log('没有有效的连接，使用连通组件检测');
+                runConnectedComponents();
+                return;
+            }
+
+            let improved = true;
+            let iteration = 0;
+            const maxIterations = 20;
+
+            while (improved && iteration < maxIterations) {
+                improved = false;
+                iteration++;
+
+                for (let i = 0; i < n; i++) {
+                    const currentCommunity = communities[i];
+                    let bestCommunity = currentCommunity;
+                    let bestGain = 0;
+
+                    // 尝试移动到邻居社区
+                    const neighbors = new Set();
+                    for (let j = 0; j < n; j++) {
+                        if (adjMatrix[i][j] && j !== i) {
+                            neighbors.add(communities[j]);
+                        }
+                    }
+
+                    neighbors.forEach(neighborCommunity => {
+                        if (neighborCommunity !== currentCommunity) {
+                            const gain = calculateModularityGain(
+                                i, currentCommunity, neighborCommunity,
+                                communities, weightMatrix, totalWeight, resolution
+                            );
+
+                            if (gain > bestGain) {
+                                bestGain = gain;
+                                bestCommunity = neighborCommunity;
+                            }
+                        }
+                    });
+
+                    if (bestCommunity !== currentCommunity) {
+                        communities[i] = bestCommunity;
+                        improved = true;
+                    }
+                }
+            }
+
+            // 重新编号社区
+            const communityMap = new Map();
+            let communityId = 0;
+            communities.forEach((community, nodeIdx) => {
+                if (!communityMap.has(community)) {
+                    communityMap.set(community, communityId++);
+                }
+                const nodeId = nodes[nodeIdx].id;
+                currentCommunities.set(nodeId, communityMap.get(community));
+            });
+
+            updateVisualization();
+
+            // 统计社区信息
+            const communitySizes = new Map();
+            currentCommunities.forEach((community, nodeId) => {
+                communitySizes.set(community, (communitySizes.get(community) || 0) + 1);
+            });
+
+            const avgCommunitySize = Array.from(communitySizes.values()).reduce((a, b) => a + b, 0) / communitySizes.size;
+
+            const html = `
+                <div class="analysis-result">
+                    <h4>Louvain社区检测结果</h4>
+                    <p>检测到 ${communitySizes.size} 个社区</p>
+                    <p>迭代次数: ${iteration}</p>
+                    <p>平均社区大小: ${avgCommunitySize.toFixed(1)} 个账户</p>
+                    <p>最大社区: ${Math.max(...communitySizes.values())} 个账户</p>
+                    <p>分辨率参数: ${resolution}</p>
+                    <small>社区大小分布: ${Array.from(communitySizes.values()).sort((a, b) => b - a).slice(0, 5).join(', ')}</small>
+                </div>
+            `;
+            addAnalysisResult(html);
+        }
+
+        // 计算模块度增益
+        function calculateModularityGain(nodeIdx, oldCommunity, newCommunity, communities, weightMatrix, totalWeight, resolution) {
+            let deltaQ = 0;
+            const n = weightMatrix.length;
+
+            // 计算节点到新社区和旧社区的连接权重
+            let weightToNew = 0;
+            let weightToOld = 0;
+            let nodeDegree = 0;
+
+            for (let j = 0; j < n; j++) {
+                const weight = weightMatrix[nodeIdx][j];
+                nodeDegree += weight;
+
+                if (communities[j] === newCommunity && j !== nodeIdx) {
+                    weightToNew += weight;
+                }
+                if (communities[j] === oldCommunity && j !== nodeIdx) {
+                    weightToOld += weight;
+                }
+            }
+
+            // 简化的模块度增益计算
+            deltaQ = (weightToNew - weightToOld) / totalWeight;
+            deltaQ -= resolution * nodeDegree * nodeDegree / (2 * totalWeight * totalWeight);
+
+            return deltaQ;
+        }
+
+        // 连通组件检测（改进版）
+        function runConnectedComponents() {
+            console.log('开始连通组件检测...');
+            currentCommunities.clear();
+
+            const visited = new Set();
+            let communityId = 0;
+            const minConnectionThreshold = 1; // 降低阈值
+
+            nodes.forEach(node => {
+                if (!visited.has(node.id)) {
+                    const component = [];
+                    const queue = [node.id];
+
+                    while (queue.length > 0) {
+                        const current = queue.shift();
+                        if (!visited.has(current)) {
+                            visited.add(current);
+                            component.push(current);
+
+                            // 查找邻居
+                            links.forEach(link => {
+                                if (link.count >= minConnectionThreshold) {
+                                    let neighbor = null;
+                                    if ((link.source.id || link.source) === current) {
+                                        neighbor = link.target.id || link.target;
+                                    } else if ((link.target.id || link.target) === current) {
+                                        neighbor = link.source.id || link.source;
+                                    }
+
+                                    if (neighbor && !visited.has(neighbor)) {
+                                        queue.push(neighbor);
+                                    }
+                                }
+                            });
+                        }
+                    }
+
+                    // 分配社区ID
+                    component.forEach(nodeId => {
+                        currentCommunities.set(nodeId, communityId);
+                    });
+                    communityId++;
+                }
+            });
+
+            updateVisualization();
+
+            const communitySizes = new Map();
+            currentCommunities.forEach((community) => {
+                communitySizes.set(community, (communitySizes.get(community) || 0) + 1);
+            });
+
+            const html = `
+                <div class="analysis-result">
+                    <h4>连通组件检测结果</h4>
+                    <p>检测到 ${communitySizes.size} 个连通组件</p>
+                    <p>最大组件: ${Math.max(...communitySizes.values())} 个账户</p>
+                    <p>孤立节点: ${Array.from(communitySizes.values()).filter(size => size === 1).length} 个</p>
+                    <small>组件大小: ${Array.from(communitySizes.values()).sort((a, b) => b - a).slice(0, 10).join(', ')}</small>
+                </div>
+            `;
+            addAnalysisResult(html);
+        }
+
+        // K-means聚类算法
+        function runKMeansClustering() {
+            console.log('开始K-means聚类...');
+            currentCommunities.clear();
+
+            const k = parseInt(document.getElementById('clusterCount')?.value || 5);
+
+            // 提取节点特征
+            const features = nodes.map(node => {
+                const connections = links.filter(l =>
+                    l.source.id === node.id || l.target.id === node.id ||
+                    l.source === node.id || l.target === node.id
+                ).length;
+
+                return [
+                    Math.log(node.inAmount + 1),
+                    Math.log(node.outAmount + 1),
+                    Math.log(node.transactionCount + 1),
+                    Math.log(connections + 1),
+                    node.inAmount / (node.outAmount + 1) // 资金流比率
+                ];
+            });
+
+            // 标准化特征
+            const normalizedFeatures = normalizeFeatures(features);
+
+            // K-means算法
+            let centroids = initializeCentroids(normalizedFeatures, k);
+            let assignments = new Array(nodes.length);
+            let converged = false;
+            let maxIterations = 100;
+            let iteration = 0;
+
+            while (!converged && iteration < maxIterations) {
+                const newAssignments = new Array(nodes.length);
+
+                // 分配点到最近的中心
+                for (let i = 0; i < normalizedFeatures.length; i++) {
+                    let minDistance = Infinity;
+                    let closestCentroid = 0;
+
+                    for (let j = 0; j < k; j++) {
+                        const distance = euclideanDistance(normalizedFeatures[i], centroids[j]);
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            closestCentroid = j;
+                        }
+                    }
+                    newAssignments[i] = closestCentroid;
+                }
+
+                // 检查收敛
+                converged = assignments.every((val, idx) => val === newAssignments[idx]);
+                assignments = newAssignments;
+
+                // 更新中心点
+                centroids = updateCentroids(normalizedFeatures, assignments, k);
+                iteration++;
+            }
+
+            // 保存聚类结果
+            nodes.forEach((node, idx) => {
+                currentCommunities.set(node.id, assignments[idx]);
+            });
+
+            updateVisualization();
+
+            // 计算聚类质量
+            const inertia = calculateInertia(normalizedFeatures, centroids, assignments);
+            const silhouette = calculateSilhouetteScore(normalizedFeatures, assignments);
+
+            const html = `
+                <div class="analysis-result">
+                    <h4>K-means聚类结果</h4>
+                    <p>聚类数量: ${k}</p>
+                    <p>迭代次数: ${iteration}</p>
+                    <p>惯性(越小越好): ${inertia.toFixed(2)}</p>
+                    <p>轮廓系数(越大越好): ${silhouette.toFixed(3)}</p>
+                    <small>基于交易金额、次数、连接数等特征</small>
+                </div>
+            `;
+            addAnalysisResult(html);
+        }
+
+        // 层次聚类算法
+        function runHierarchicalClustering() {
+            console.log('开始层次聚类...');
+            currentCommunities.clear();
+
+            const targetClusters = parseInt(document.getElementById('clusterCount')?.value || 5);
+
+            // 计算距离矩阵
+            const distanceMatrix = calculateDistanceMatrix();
+
+            // 初始化每个节点为一个聚类
+            let clusters = nodes.map((node, idx) => [idx]);
+            const n = nodes.length;
+
+            // 凝聚聚类
+            while (clusters.length > targetClusters) {
+                let minDistance = Infinity;
+                let mergeIndices = [0, 1];
+
+                // 找到最近的两个聚类
+                for (let i = 0; i < clusters.length; i++) {
+                    for (let j = i + 1; j < clusters.length; j++) {
+                        const distance = calculateClusterDistance(clusters[i], clusters[j], distanceMatrix);
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            mergeIndices = [i, j];
+                        }
+                    }
+                }
+
+                // 合并聚类
+                const [i, j] = mergeIndices;
+                clusters[i] = clusters[i].concat(clusters[j]);
+                clusters.splice(j, 1);
+            }
+
+            // 分配聚类标签
+            clusters.forEach((cluster, clusterIdx) => {
+                cluster.forEach(nodeIdx => {
+                    currentCommunities.set(nodes[nodeIdx].id, clusterIdx);
+                });
+            });
+
+            updateVisualization();
+
+            const clusterSizes = clusters.map(c => c.length);
+            const html = `
+                <div class="analysis-result">
+                    <h4>层次聚类结果</h4>
+                    <p>目标聚类数: ${targetClusters}</p>
+                    <p>实际聚类数: ${clusters.length}</p>
+                    <p>聚类大小: ${clusterSizes.join(', ')}</p>
+                    <small>使用单链接准则（最小距离）</small>
+                </div>
+            `;
+            addAnalysisResult(html);
+        }
+
+        // 谱聚类算法
+        function runSpectralClustering() {
+            console.log('开始谱聚类...');
+            currentCommunities.clear();
+
+            const k = parseInt(document.getElementById('clusterCount')?.value || 5);
+
+            // 构建相似矩阵
+            const n = nodes.length;
+            const W = Array(n).fill().map(() => Array(n).fill(0));
+
+            // 基于交易关系构建相似矩阵
+            links.forEach(link => {
+                const sourceIdx = nodes.findIndex(n => n.id === (link.source.id || link.source));
+                const targetIdx = nodes.findIndex(n => n.id === (link.target.id || link.target));
+
+                if (sourceIdx !== -1 && targetIdx !== -1) {
+                    const similarity = Math.exp(-1 / (link.totalAmount + 1)); // 基于金额的相似度
+                    W[sourceIdx][targetIdx] = similarity;
+                    W[targetIdx][sourceIdx] = similarity;
+                }
+            });
+
+            // 计算度矩阵
+            const D = Array(n).fill().map(() => Array(n).fill(0));
+            for (let i = 0; i < n; i++) {
+                let degree = 0;
+                for (let j = 0; j < n; j++) {
+                    degree += W[i][j];
+                }
+                D[i][i] = degree;
+            }
+
+            // 简化版本：使用随机分配（真正的谱聚类需要特征值分解）
+            const assignments = Array(n).fill().map(() => Math.floor(Math.random() * k));
+
+            // 优化分配（简单的局部优化）
+            for (let iter = 0; iter < 10; iter++) {
+                for (let i = 0; i < n; i++) {
+                    let bestCluster = assignments[i];
+                    let bestScore = 0;
+
+                    for (let c = 0; c < k; c++) {
+                        let score = 0;
+                        for (let j = 0; j < n; j++) {
+                            if (assignments[j] === c) {
+                                score += W[i][j];
+                            }
+                        }
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestCluster = c;
+                        }
+                    }
+                    assignments[i] = bestCluster;
+                }
+            }
+
+            // 保存结果
+            nodes.forEach((node, idx) => {
+                currentCommunities.set(node.id, assignments[idx]);
+            });
+
+            updateVisualization();
+
+            const clusterSizes = new Map();
+            assignments.forEach(cluster => {
+                clusterSizes.set(cluster, (clusterSizes.get(cluster) || 0) + 1);
+            });
+
+            const html = `
+                <div class="analysis-result">
+                    <h4>谱聚类结果</h4>
+                    <p>聚类数量: ${k}</p>
+                    <p>聚类分布: ${Array.from(clusterSizes.values()).join(', ')}</p>
+                    <small>基于交易网络的相似性矩阵</small>
+                </div>
+            `;
+            addAnalysisResult(html);
+        }
+
+        // 辅助函数
+        function normalizeFeatures(features) {
+            const means = features[0].map((_, colIdx) =>
+                features.reduce((sum, row) => sum + row[colIdx], 0) / features.length
+            );
+            const stds = features[0].map((_, colIdx) => {
+                const mean = means[colIdx];
+                const variance = features.reduce((sum, row) => sum + Math.pow(row[colIdx] - mean, 2), 0) / features.length;
+                return Math.sqrt(variance);
+            });
+
+            return features.map(row =>
+                row.map((val, colIdx) => stds[colIdx] > 0 ? (val - means[colIdx]) / stds[colIdx] : 0)
+            );
+        }
+
+        function initializeCentroids(features, k) {
+            const centroids = [];
+            for (let i = 0; i < k; i++) {
+                const randomIdx = Math.floor(Math.random() * features.length);
+                centroids.push([...features[randomIdx]]);
+            }
+            return centroids;
+        }
+
+        function euclideanDistance(a, b) {
+            return Math.sqrt(a.reduce((sum, val, idx) => sum + Math.pow(val - b[idx], 2), 0));
+        }
+
+        function updateCentroids(features, assignments, k) {
+            const centroids = Array(k).fill().map(() => Array(features[0].length).fill(0));
+            const counts = Array(k).fill(0);
+
+            assignments.forEach((cluster, idx) => {
+                counts[cluster]++;
+                features[idx].forEach((val, featureIdx) => {
+                    centroids[cluster][featureIdx] += val;
+                });
+            });
+
+            return centroids.map((centroid, clusterIdx) =>
+                counts[clusterIdx] > 0 ? centroid.map(val => val / counts[clusterIdx]) : centroid
+            );
+        }
+
+        function calculateInertia(features, centroids, assignments) {
+            return assignments.reduce((sum, cluster, idx) =>
+                sum + Math.pow(euclideanDistance(features[idx], centroids[cluster]), 2), 0
+            );
+        }
+
+        function calculateSilhouetteScore(features, assignments) {
+            // 简化版轮廓系数计算
+            let totalScore = 0;
+            const n = features.length;
+
+            for (let i = 0; i < n; i++) {
+                const ownCluster = assignments[i];
+
+                // 计算簇内平均距离
+                let intraDistance = 0;
+                let intraCount = 0;
+                for (let j = 0; j < n; j++) {
+                    if (i !== j && assignments[j] === ownCluster) {
+                        intraDistance += euclideanDistance(features[i], features[j]);
+                        intraCount++;
+                    }
+                }
+                const a = intraCount > 0 ? intraDistance / intraCount : 0;
+
+                // 计算最近其他簇的平均距离
+                let minInterDistance = Infinity;
+                const clusters = [...new Set(assignments)];
+                for (const cluster of clusters) {
+                    if (cluster !== ownCluster) {
+                        let interDistance = 0;
+                        let interCount = 0;
+                        for (let j = 0; j < n; j++) {
+                            if (assignments[j] === cluster) {
+                                interDistance += euclideanDistance(features[i], features[j]);
+                                interCount++;
+                            }
+                        }
+                        if (interCount > 0) {
+                            minInterDistance = Math.min(minInterDistance, interDistance / interCount);
+                        }
+                    }
+                }
+                const b = minInterDistance === Infinity ? 0 : minInterDistance;
+
+                totalScore += (b - a) / Math.max(a, b);
+            }
+
+            return totalScore / n;
+        }
+
+        function calculateDistanceMatrix() {
+            const n = nodes.length;
+            const distances = Array(n).fill().map(() => Array(n).fill(0));
+
+            for (let i = 0; i < n; i++) {
+                for (let j = i + 1; j < n; j++) {
+                    const node1 = nodes[i];
+                    const node2 = nodes[j];
+
+                    // 基于多个特征计算距离
+                    const features1 = [
+                        Math.log(node1.inAmount + 1),
+                        Math.log(node1.outAmount + 1),
+                        Math.log(node1.transactionCount + 1)
+                    ];
+                    const features2 = [
+                        Math.log(node2.inAmount + 1),
+                        Math.log(node2.outAmount + 1),
+                        Math.log(node2.transactionCount + 1)
+                    ];
+
+                    const distance = euclideanDistance(features1, features2);
+                    distances[i][j] = distance;
+                    distances[j][i] = distance;
+                }
+            }
+
+            return distances;
+        }
+
+        function calculateClusterDistance(cluster1, cluster2, distanceMatrix) {
+            // 单链接准则：最小距离
+            let minDistance = Infinity;
+            for (const i of cluster1) {
+                for (const j of cluster2) {
+                    minDistance = Math.min(minDistance, distanceMatrix[i][j]);
+                }
+            }
+            return minDistance;
+        }
+
+        // 保持原有的社区检测函数作为向后兼容
+        function runCommunityDetection() {
+            runLouvainCommunityDetection();
+        }
+    </script>
+</body>
+
+</html>

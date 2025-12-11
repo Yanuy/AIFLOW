@@ -1,0 +1,918 @@
+/**
+ * 多媒体录制中心样式
+ * 包含录音、录像、拍照功能的UI样式
+ */
+
+/* ==================== 窗口基础样式 ==================== */
+.media-recorder-window {
+    position: fixed;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    display: none;
+    flex-direction: column;
+    z-index: 9000;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Microsoft YaHei', sans-serif;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+    min-height: 400px;
+    max-height: 90vh;
+}
+
+.media-recorder-window:hover {
+    box-shadow: 0 16px 64px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+/* ==================== 窗口头部 ==================== */
+.media-window-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    cursor: move;
+    user-select: none;
+}
+
+.media-window-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.media-window-title i {
+    font-size: 18px;
+}
+
+.media-window-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.media-window-controls .media-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: none;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.media-window-controls .media-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* ==================== 窗口主体 ==================== */
+.media-window-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    gap: 16px;
+    min-height: 0;
+}
+
+/* ==================== 模式切换标签 ==================== */
+.media-mode-tabs {
+    display: flex;
+    background: #f1f3f5;
+    border-radius: 10px;
+    padding: 4px;
+    gap: 4px;
+}
+
+.media-tab {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.media-tab:hover {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+}
+
+.media-tab.active {
+    background: white;
+    color: #667eea;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.media-tab i {
+    font-size: 14px;
+}
+
+/* ==================== 预览区域 ==================== */
+.media-preview-area {
+    background: #f8f9fa;
+    border-radius: 12px;
+    overflow: hidden;
+    min-height: 170px;
+}
+
+.audio-visualizer-container {
+    padding: 12px;
+}
+
+.audio-visualizer-container canvas {
+    width: 100%;
+    height: 150px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.audio-level-meter {
+    height: 6px;
+    background: #e9ecef;
+    border-radius: 3px;
+    margin-top: 10px;
+    overflow: hidden;
+}
+
+.audio-level-meter .level-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #27ae60, #f39c12, #e74c3c);
+    width: 0%;
+    transition: width 0.1s ease;
+    border-radius: 3px;
+}
+
+.video-preview-container {
+    position: relative;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.video-preview-container video {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+/* ==================== 录制信息 ==================== */
+.recording-info-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.recording-time {
+    font-size: 32px;
+    font-weight: 700;
+    font-family: 'SF Mono', 'Monaco', monospace;
+    color: #333;
+    letter-spacing: 2px;
+}
+
+.recording-status {
+    font-size: 13px;
+    color: #666;
+    font-weight: 500;
+}
+
+/* ==================== 控制按钮 ==================== */
+.media-control-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    padding: 8px 0;
+}
+
+.media-btn {
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.media-btn-record {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+    font-size: 24px;
+    box-shadow: 0 4px 16px rgba(231, 76, 60, 0.4);
+}
+
+.media-btn-record:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 24px rgba(231, 76, 60, 0.5);
+}
+
+.media-btn-record:disabled {
+    background: #bdc3c7;
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.media-btn-record.recording {
+    animation: pulse-recording 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-recording {
+
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: 0 4px 16px rgba(231, 76, 60, 0.4);
+    }
+
+    50% {
+        transform: scale(1.08);
+        box-shadow: 0 6px 24px rgba(231, 76, 60, 0.6);
+    }
+}
+
+.media-btn-pause,
+.media-btn-stop {
+    width: 48px;
+    height: 48px;
+    background: #f1f3f5;
+    color: #495057;
+    font-size: 18px;
+}
+
+.media-btn-pause:hover,
+.media-btn-stop:hover {
+    background: #e9ecef;
+}
+
+.media-btn-pause:disabled,
+.media-btn-stop:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.media-btn-photo {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    font-size: 24px;
+    box-shadow: 0 4px 16px rgba(52, 152, 219, 0.4);
+}
+
+.media-btn-photo:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 24px rgba(52, 152, 219, 0.5);
+}
+
+/* ==================== 设置面板 ==================== */
+.media-settings-panel {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.settings-section {
+    margin-bottom: 16px;
+}
+
+.settings-section:last-child {
+    margin-bottom: 0;
+}
+
+.settings-section h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+    margin: 0 0 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.settings-section h4 i {
+    color: #667eea;
+}
+
+.setting-group {
+    margin-bottom: 10px;
+}
+
+.setting-group:last-child {
+    margin-bottom: 0;
+}
+
+.setting-group label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.media-select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 13px;
+    background: white;
+    color: #333;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.media-select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+}
+
+.checkbox-label {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px !important;
+    color: #333 !important;
+    margin-bottom: 0 !important;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #667eea;
+}
+
+/* ==================== 文件列表 ==================== */
+.media-files-panel {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 12px;
+}
+
+.files-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.files-header h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+    margin: 0;
+}
+
+.files-list {
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.no-files {
+    text-align: center;
+    padding: 20px;
+    color: #adb5bd;
+}
+
+.no-files i {
+    font-size: 32px;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.no-files p {
+    margin: 0;
+    font-size: 13px;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: box-shadow 0.2s;
+}
+
+.file-item:last-child {
+    margin-bottom: 0;
+}
+
+.file-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.file-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+.file-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.file-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-details {
+    font-size: 11px;
+    color: #868e96;
+    margin-top: 2px;
+}
+
+.file-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.media-btn-small {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: #f1f3f5;
+    color: #495057;
+    font-size: 12px;
+}
+
+.media-btn-small:hover {
+    background: #e9ecef;
+    color: #667eea;
+}
+
+/* ==================== 转写面板 ==================== */
+.transcription-panel {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 8px;
+}
+
+.transcription-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.transcription-header h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.transcription-header h4 i {
+    color: #667eea;
+}
+
+.transcription-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.transcription-content {
+    background: white;
+    border-radius: 8px;
+    padding: 12px;
+    min-height: 80px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.transcription-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+    white-space: pre-wrap;
+}
+
+.transcription-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: #667eea;
+    padding: 20px;
+}
+
+.transcription-loading i {
+    font-size: 20px;
+}
+
+.summary-content {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e9ecef;
+}
+
+.summary-content h5 {
+    font-size: 12px;
+    font-weight: 600;
+    color: #495057;
+    margin: 0 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.summary-content h5 i {
+    color: #27ae60;
+}
+
+.summary-text {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #666;
+    background: #f0fff4;
+    padding: 10px;
+    border-radius: 6px;
+    border-left: 3px solid #27ae60;
+}
+
+.summary-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: #27ae60;
+    padding: 20px;
+}
+
+.summary-loading i {
+    font-size: 18px;
+}
+
+/* ==================== 节点样式 ==================== */
+.media-recorder-node-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px;
+    gap: 8px;
+}
+
+.media-recorder-node-content .node-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.media-recorder-node-content .node-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+}
+
+.media-recorder-node-content .node-features {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* 节点预览样式 - 与 DocumentEditorNode 一致 */
+.media-recorder-node-preview {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+}
+
+.media-recorder-node-preview .preview-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.media-recorder-node-preview .preview-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.media-recorder-node-preview .preview-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.media-recorder-node-preview .preview-features {
+    font-size: 10px;
+    color: #667eea;
+}
+
+.media-recorder-node-preview .preview-hint {
+    font-size: 10px;
+    color: #999;
+}
+
+.feature-tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    border-radius: 4px;
+}
+
+.media-recorder-node-content .node-actions {
+    margin-top: 4px;
+}
+
+.media-recorder-node-content .node-hint {
+    font-size: 10px;
+    color: #999;
+    margin-top: 4px;
+}
+
+.media-recorder-node-content .node-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    background: white;
+    color: #495057;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.media-recorder-node-content .node-btn:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+/* ==================== 配置对话框 ==================== */
+.media-recorder-config-dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.media-recorder-config-dialog .config-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.media-recorder-config-dialog .config-content {
+    position: relative;
+    background: white;
+    border-radius: 16px;
+    width: 450px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.media-recorder-config-dialog .config-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.media-recorder-config-dialog .config-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.media-recorder-config-dialog .config-header h3 i {
+    color: #667eea;
+}
+
+.media-recorder-config-dialog .config-close {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: none;
+    background: #f1f3f5;
+    color: #666;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.media-recorder-config-dialog .config-close:hover {
+    background: #e9ecef;
+}
+
+.media-recorder-config-dialog .config-body {
+    padding: 20px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.media-recorder-config-dialog .config-section {
+    margin-bottom: 20px;
+}
+
+.media-recorder-config-dialog .config-section:last-child {
+    margin-bottom: 0;
+}
+
+.media-recorder-config-dialog .config-section h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+    margin: 0 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.media-recorder-config-dialog .config-group {
+    margin-bottom: 12px;
+}
+
+.media-recorder-config-dialog .config-group label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.media-recorder-config-dialog .config-group input[type="text"],
+.media-recorder-config-dialog .config-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.media-recorder-config-dialog .config-group input[type="text"]:focus,
+.media-recorder-config-dialog .config-group select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.media-recorder-config-dialog .config-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 20px;
+    border-top: 1px solid #e9ecef;
+    background: #f8f9fa;
+}
+
+.media-recorder-config-dialog .btn-cancel,
+.media-recorder-config-dialog .btn-save {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.media-recorder-config-dialog .btn-cancel {
+    background: #f1f3f5;
+    border: 1px solid #dee2e6;
+    color: #495057;
+}
+
+.media-recorder-config-dialog .btn-cancel:hover {
+    background: #e9ecef;
+}
+
+.media-recorder-config-dialog .btn-save {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+}
+
+.media-recorder-config-dialog .btn-save:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* ==================== 滚动条样式 ==================== */
+.media-recorder-window ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.media-recorder-window ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.media-recorder-window ::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 3px;
+}
+
+.media-recorder-window ::-webkit-scrollbar-thumb:hover {
+    background: #adb5bd;
+}
+
+/* ==================== 响应式调整 ==================== */
+@media (max-width: 520px) {
+    .media-recorder-window {
+        width: calc(100vw - 20px) !important;
+        left: 10px !important;
+    }
+
+    .media-mode-tabs {
+        flex-direction: column;
+    }
+
+    .media-control-buttons {
+        gap: 12px;
+    }
+
+    .media-btn-record {
+        width: 56px;
+        height: 56px;
+        font-size: 20px;
+    }
+
+    .media-btn-pause,
+    .media-btn-stop {
+        width: 44px;
+        height: 44px;
+        font-size: 16px;
+    }
+}

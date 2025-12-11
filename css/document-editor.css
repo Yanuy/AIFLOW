@@ -1,0 +1,916 @@
+/**
+ * 文档编辑器样式 - Document Editor Styles
+ * 配合 document-editor-window.js 使用
+ */
+
+/* ==================== 窗口容器 ==================== */
+.document-editor-window {
+    position: fixed;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Microsoft YaHei', sans-serif;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+}
+
+.document-editor-window:hover {
+    box-shadow: 0 16px 64px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+/* ==================== 标题栏 ==================== */
+.doc-window-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    cursor: move;
+    user-select: none;
+}
+
+.doc-window-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.doc-window-title i {
+    font-size: 16px;
+}
+
+.doc-window-title .doc-name {
+    font-weight: 400;
+    opacity: 0.9;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.doc-window-title .modified-indicator {
+    color: #ffd700;
+    font-size: 12px;
+}
+
+.doc-window-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.doc-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.doc-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+}
+
+.doc-btn.active {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.doc-btn-close:hover {
+    background: #e74c3c;
+}
+
+/* ==================== 主体区域 ==================== */
+.doc-window-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    background: #f8f9fa;
+}
+
+/* ==================== 侧边栏 ==================== */
+.doc-sidebar {
+    width: 280px;
+    min-width: 200px;
+    background: #ffffff;
+    border-right: 1px solid #e9ecef;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.sidebar-section {
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.sidebar-section:last-child {
+    border-bottom: none;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.sidebar-header h4 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sidebar-header h4 i {
+    font-size: 12px;
+    color: #667eea;
+}
+
+.sidebar-btn {
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.sidebar-btn:hover {
+    background: #e9ecef;
+    color: #495057;
+}
+
+/* 变量列表 */
+.variable-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    max-height: 200px;
+}
+
+.variable-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    transition: all 0.2s;
+}
+
+.variable-item:hover {
+    background: #e9ecef;
+}
+
+.var-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #495057;
+    flex: 1;
+}
+
+.var-type {
+    font-size: 11px;
+    color: #6c757d;
+    background: #e9ecef;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-right: 8px;
+}
+
+.var-insert-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.var-insert-btn:hover {
+    background: #5a6fd6;
+    transform: scale(1.1);
+}
+
+.no-variables {
+    text-align: center;
+    color: #adb5bd;
+    padding: 20px;
+    font-size: 13px;
+}
+
+/* AI助手面板 */
+.ai-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 250px;
+}
+
+.ai-chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.ai-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    background: #f8f9fa;
+}
+
+.ai-welcome {
+    text-align: center;
+    color: #6c757d;
+    padding: 20px;
+}
+
+.ai-welcome i {
+    font-size: 32px;
+    color: #667eea;
+    margin-bottom: 12px;
+}
+
+.ai-welcome p {
+    margin: 8px 0;
+    font-size: 13px;
+}
+
+.ai-welcome ul {
+    text-align: left;
+    margin: 12px 0;
+    padding-left: 20px;
+    font-size: 12px;
+}
+
+.ai-welcome li {
+    margin: 4px 0;
+}
+
+.ai-message {
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    max-width: 95%;
+}
+
+.ai-message-user {
+    background: #667eea;
+    color: white;
+    margin-left: auto;
+    border-bottom-right-radius: 4px;
+}
+
+.ai-message-assistant {
+    background: white;
+    color: #495057;
+    border: 1px solid #e9ecef;
+    border-bottom-left-radius: 4px;
+}
+
+.ai-message-error {
+    background: #fee;
+    color: #c00;
+    border: 1px solid #fcc;
+}
+
+.message-content {
+    word-break: break-word;
+}
+
+.message-content pre {
+    background: #f4f4f4;
+    padding: 8px;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 12px;
+}
+
+.message-content code {
+    background: #f4f4f4;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.message-actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 6px;
+}
+
+.action-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.action-btn:hover {
+    background: #5a6fd6;
+}
+
+.ai-input-area {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    background: white;
+    border-top: 1px solid #e9ecef;
+}
+
+.ai-input {
+    flex: 1;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    resize: none;
+    min-height: 60px;
+    max-height: 120px;
+    font-family: inherit;
+}
+
+.ai-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.ai-send-btn {
+    background: #667eea;
+    color: white;
+    align-self: flex-end;
+}
+
+.ai-send-btn:hover {
+    background: #5a6fd6;
+}
+
+/* 导出面板 */
+.export-section {
+    padding-bottom: 12px;
+}
+
+.export-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 12px;
+}
+
+.export-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 12px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    color: #495057;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.export-btn:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+.export-btn i {
+    font-size: 14px;
+}
+
+/* ==================== 主编辑区域 ==================== */
+.doc-main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: white;
+}
+
+/* 工具栏 */
+.doc-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    gap: 4px;
+}
+
+.doc-toolbar .ql-formats {
+    display: flex;
+    align-items: center;
+    margin-right: 8px;
+}
+
+.doc-toolbar button,
+.doc-toolbar select {
+    height: 28px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.doc-toolbar button:hover,
+.doc-toolbar select:hover {
+    background: #e9ecef;
+}
+
+.doc-toolbar button.ql-active {
+    background: #667eea;
+    color: white;
+}
+
+.custom-formats {
+    margin-left: auto !important;
+}
+
+.toolbar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 28px;
+    color: #495057;
+}
+
+.toolbar-btn:hover {
+    color: #667eea;
+}
+
+/* Quill编辑器容器 */
+.doc-editor-container {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.doc-editor {
+    flex: 1;
+    overflow-y: auto;
+    font-size: 15px;
+    line-height: 1.8;
+}
+
+/* Quill编辑器样式覆盖 */
+.doc-editor .ql-editor {
+    padding: 30px 40px;
+    min-height: 100%;
+}
+
+.doc-editor .ql-editor:focus {
+    outline: none;
+}
+
+.doc-editor .ql-editor h1 {
+    font-size: 2em;
+    margin-bottom: 0.5em;
+}
+
+.doc-editor .ql-editor h2 {
+    font-size: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+.doc-editor .ql-editor p {
+    margin-bottom: 1em;
+}
+
+.doc-editor .ql-editor blockquote {
+    border-left: 4px solid #667eea;
+    padding-left: 16px;
+    color: #6c757d;
+    margin: 1em 0;
+}
+
+.doc-editor .ql-editor pre {
+    background: #f8f9fa;
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+}
+
+.doc-editor .ql-editor img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.doc-editor .ql-editor img:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 变量标签样式 */
+.doc-variable {
+    display: inline-block;
+    background: linear-gradient(135deg, #e3f2fd 0%, #e8eaf6 100%);
+    color: #1565c0;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 0.9em;
+    border: 1px solid #bbdefb;
+    cursor: default;
+    transition: all 0.2s;
+}
+
+.doc-variable:hover {
+    background: linear-gradient(135deg, #bbdefb 0%, #c5cae9 100%);
+}
+
+/* 回退编辑器 */
+.fallback-doc-editor {
+    width: 100%;
+    height: 100%;
+    border: none;
+    padding: 30px 40px;
+    font-size: 15px;
+    line-height: 1.8;
+    resize: none;
+    outline: none;
+    font-family: inherit;
+}
+
+/* ==================== 画板区域 ==================== */
+.doc-canvas-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #f0f0f0;
+    padding: 12px;
+}
+
+.canvas-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.canvas-tool {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: #f8f9fa;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #495057;
+    transition: all 0.2s;
+}
+
+.canvas-tool:hover {
+    background: #e9ecef;
+}
+
+.canvas-tool.active {
+    background: #667eea;
+    color: white;
+}
+
+.canvas-separator {
+    width: 1px;
+    height: 24px;
+    background: #dee2e6;
+    margin: 0 4px;
+}
+
+.canvas-color {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 4px;
+}
+
+.canvas-line-width {
+    height: 36px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 0 8px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.canvas-action {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: #f8f9fa;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #495057;
+    transition: all 0.2s;
+}
+
+.canvas-action:hover {
+    background: #e9ecef;
+    color: #667eea;
+}
+
+.doc-canvas-container canvas {
+    flex: 1;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    cursor: crosshair;
+}
+
+.canvas-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px;
+}
+
+.canvas-actions .doc-btn {
+    background: #667eea;
+    padding: 8px 20px;
+    width: auto;
+    font-size: 13px;
+    gap: 6px;
+}
+
+.canvas-actions .doc-btn:hover {
+    background: #5a6fd6;
+}
+
+/* ==================== 状态栏 ==================== */
+.doc-statusbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 16px;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.status-item {
+    padding: 0 12px;
+    border-right: 1px solid #dee2e6;
+}
+
+.status-item:last-child {
+    border-right: none;
+}
+
+/* ==================== 响应式调整 ==================== */
+@media (max-width: 900px) {
+    .doc-sidebar {
+        width: 220px;
+        min-width: 180px;
+    }
+
+    .doc-editor .ql-editor {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 700px) {
+    .doc-sidebar {
+        display: none;
+    }
+
+    .doc-toolbar {
+        padding: 6px 8px;
+    }
+
+    .doc-editor .ql-editor {
+        padding: 16px;
+    }
+}
+
+/* ==================== Quill主题覆盖 ==================== */
+.document-editor-window .ql-toolbar.ql-snow {
+    border: none;
+    background: transparent;
+    padding: 0;
+}
+
+.document-editor-window .ql-container.ql-snow {
+    border: none;
+}
+
+.document-editor-window .ql-snow .ql-picker {
+    color: #495057;
+}
+
+.document-editor-window .ql-snow .ql-stroke {
+    stroke: #495057;
+}
+
+.document-editor-window .ql-snow .ql-fill {
+    fill: #495057;
+}
+
+.document-editor-window .ql-snow.ql-toolbar button:hover,
+.document-editor-window .ql-snow .ql-toolbar button:hover {
+    color: #667eea;
+}
+
+.document-editor-window .ql-snow.ql-toolbar button:hover .ql-stroke,
+.document-editor-window .ql-snow .ql-toolbar button:hover .ql-stroke {
+    stroke: #667eea;
+}
+
+.document-editor-window .ql-snow.ql-toolbar button:hover .ql-fill,
+.document-editor-window .ql-snow .ql-toolbar button:hover .ql-fill {
+    fill: #667eea;
+}
+
+.document-editor-window .ql-snow.ql-toolbar button.ql-active,
+.document-editor-window .ql-snow .ql-toolbar button.ql-active {
+    color: white;
+}
+
+.document-editor-window .ql-snow.ql-toolbar button.ql-active .ql-stroke,
+.document-editor-window .ql-snow .ql-toolbar button.ql-active .ql-stroke {
+    stroke: white;
+}
+
+.document-editor-window .ql-snow.ql-toolbar button.ql-active .ql-fill,
+.document-editor-window .ql-snow .ql-toolbar button.ql-active .ql-fill {
+    fill: white;
+}
+
+/* ==================== 动画 ==================== */
+@keyframes docWindowIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.document-editor-window {
+    animation: docWindowIn 0.3s ease;
+}
+
+/* ==================== 滚动条样式 ==================== */
+.document-editor-window ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.document-editor-window ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.document-editor-window ::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.document-editor-window ::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* ==================== 打印样式 ==================== */
+@media print {
+    .document-editor-window {
+        position: static;
+        box-shadow: none;
+        width: 100%;
+        height: auto;
+    }
+
+    .doc-window-header,
+    .doc-sidebar,
+    .doc-toolbar,
+    .doc-statusbar,
+    .doc-canvas-container {
+        display: none !important;
+    }
+
+    .doc-editor {
+        padding: 0;
+    }
+
+    .doc-variable {
+        background: none;
+        border: none;
+        color: inherit;
+    }
+}
+
+/* ==================== 节点预览样式 ==================== */
+.document-editor-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 15px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(180deg, #f8f9ff 0%, #ffffff 100%);
+}
+
+.document-editor-preview .preview-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.document-editor-preview .preview-icon i {
+    font-size: 24px;
+    color: white;
+}
+
+.document-editor-preview .preview-info {
+    text-align: center;
+}
+
+.document-editor-preview .preview-title {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.document-editor-preview .preview-hint {
+    display: block;
+    font-size: 11px;
+    color: #888;
+}
+
+/* 工具栏按钮样式 */
+#documentEditorBtn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    margin-right: 8px;
+    transition: all 0.2s ease;
+}
+
+#documentEditorBtn:hover {
+    background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}

@@ -2,16 +2,16 @@
 <html lang="zh-CN">
 
 <head>
-<!-- 
-    AI工作流平台 - 生产版本
-    代码已混淆处理，文件名随机化保护架构信息
-    构建时间: 2025-09-04T07:47:18.722Z
--->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI工作流平台</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/new-modules.css">
+    <link rel="stylesheet" href="css/document-editor.css">
+    <link rel="stylesheet" href="css/media-recorder.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- JSZip 用于导出ZIP文件 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 
 <body>
@@ -21,12 +21,16 @@
             <h1><i class="fas fa-project-diagram"></i> AI工作流平台</h1>
         </div>
         <div class="toolbar-center">
-            <button id="playBtn" class="btn btn-success" title="执行工作流">
+            <button id="playBtn" class="btn btn-success" title="执行工作流（触发器将开始监听）">
                 <i class="fas fa-play"></i> 执行
             </button>
-            <button id="stopBtn" class="btn btn-danger" title="停止执行" disabled>
+            <button id="stopBtn" class="btn btn-danger" title="停止执行（触发器将停止监听）" disabled>
                 <i class="fas fa-stop"></i> 停止
             </button>
+            <div id="triggerStatus" class="trigger-status-indicator" title="触发器状态" style="display:none;">
+                <i class="fas fa-bolt"></i>
+                <span class="trigger-count">0</span>
+            </div>
             <button id="saveBtn" class="btn btn-primary" title="保存工作流">
                 <i class="fas fa-save"></i> 保存
             </button>
@@ -35,6 +39,9 @@
             </button>
             <button id="exportBtn" class="btn btn-info" title="导出工作流">
                 <i class="fas fa-download"></i> 导出
+            </button>
+            <button id="exportExecutableBtn" class="btn btn-success" title="生成可执行文件">
+                <i class="fas fa-file-code"></i> 生成
             </button>
             <input type="file" id="importFile" accept=".json" style="display: none;">
             <button id="importBtn" class="btn btn-warning" title="导入工作流">
@@ -45,9 +52,6 @@
             </button>
             <button id="variablesBtn" class="btn btn-warning" title="全局存储管理">
                 <i class="fas fa-database"></i> 存储
-            </button>
-            <button id="agentBtn" class="btn btn-success" title="工作流智能体">
-                <i class="fas fa-robot"></i> 智能体
             </button>
         </div>
         <div class="toolbar-right">
@@ -158,6 +162,42 @@
                         </div>
                     </div>
 
+                    <!-- 触发器节点 -->
+                    <div class="node-category" data-category="trigger">
+                        <div class="category-header">
+                            <h4><i class="fas fa-bolt"></i> 触发器</h4>
+                            <button class="category-toggle" data-target="trigger-nodes">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </div>
+                        <div class="category-content" id="trigger-nodes">
+                            <div class="node-item" data-type="schedule-trigger">
+                                <i class="fas fa-clock"></i>
+                                <span>定时触发</span>
+                            </div>
+                            <div class="node-item" data-type="message-trigger">
+                                <i class="fas fa-envelope"></i>
+                                <span>消息触发</span>
+                            </div>
+                            <div class="node-item" data-type="threshold-trigger">
+                                <i class="fas fa-chart-line"></i>
+                                <span>阈值触发</span>
+                            </div>
+                            <div class="node-item" data-type="event-trigger">
+                                <i class="fas fa-bolt"></i>
+                                <span>事件触发</span>
+                            </div>
+                            <div class="node-item" data-type="message-sender">
+                                <i class="fas fa-paper-plane"></i>
+                                <span>消息发送</span>
+                            </div>
+                            <div class="node-item" data-type="workflow-communication">
+                                <i class="fas fa-network-wired"></i>
+                                <span>工作流通信</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="node-category" data-category="tool">
                         <div class="category-header">
                             <h4><i class="fas fa-tools"></i> 工具节点</h4>
@@ -208,6 +248,22 @@
                             <div class="node-item" data-type="data-analysis">
                                 <i class="fas fa-chart-line"></i>
                                 <span>数据分析</span>
+                            </div>
+                            <div class="node-item" data-type="document-editor">
+                                <i class="fas fa-file-alt"></i>
+                                <span>文档编辑器</span>
+                            </div>
+                            <div class="node-item" data-type="media-recorder">
+                                <i class="fas fa-photo-video"></i>
+                                <span>多媒体录制</span>
+                            </div>
+                            <div class="node-item" data-type="audio-transcription">
+                                <i class="fas fa-file-audio"></i>
+                                <span>音频转写</span>
+                            </div>
+                            <div class="node-item" data-type="text-summary">
+                                <i class="fas fa-compress-alt"></i>
+                                <span>文本摘要</span>
                             </div>
                         </div>
                     </div>
@@ -333,53 +389,146 @@
 
     <!-- API配置模态框 -->
     <div id="settingsModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 700px;">
             <div class="modal-header">
                 <h2><i class="fas fa-cog"></i> API配置</h2>
                 <span class="close">&times;</span>
             </div>
             <div class="modal-body">
                 <form id="apiConfigForm">
+                    <!-- API服务选择 -->
                     <div class="form-group">
-                        <label for="apiUrl">API地址:</label>
-                        <input type="url" id="apiUrl" name="apiUrl" required
-                            placeholder="https://api.openai.com/v1/chat/completions">
+                        <label>默认API服务:</label>
+                        <div class="api-provider-selector">
+                            <label class="radio-label">
+                                <input type="radio" name="apiProvider" value="giteeai" checked>
+                                <span class="provider-badge giteeai">沐曦 (GiteeAI)</span>
+                                <small>国产模型，推荐使用</small>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="apiProvider" value="openai">
+                                <span class="provider-badge openai">OpenAI 格式</span>
+                                <small>GPT/Claude/DALL-E等</small>
+                            </label>
+                        </div>
+                        <small class="form-text">系统会根据模型名称自动选择对应的API服务</small>
                     </div>
-                    <div class="form-group">
-                        <label for="apiKey">API密钥:</label>
-                        <input type="password" id="apiKey" name="apiKey" required placeholder="sk-...">
-                    </div>
-                    <div class="form-group">
-                        <label for="defaultModel">默认模型:</label>
-                        <input type="text" id="defaultModel" name="defaultModel" placeholder="gpt-3.5-turbo">
-                    </div>
-                    <div class="form-group">
-                        <label for="maxTokens">最大Token数:</label>
-                        <input type="number" id="maxTokens" name="maxTokens" placeholder="2048" min="1" max="4096">
-                    </div>
-                    <div class="form-group">
-                        <label for="temperature">Temperature:</label>
-                        <input type="number" id="temperature" name="temperature" placeholder="0.7" min="0" max="2"
-                            step="0.1">
-                    </div>
-                    <div class="form-group">
-                        <label for="nodeDefaultWidth">节点默认宽度:</label>
-                        <input type="range" id="nodeDefaultWidth" name="nodeDefaultWidth" min="120" max="300" step="10"
-                            value="180">
-                        <span class="range-value" id="nodeWidthValue">180px</span>
-                    </div>
-                    <div class="form-group">
-                        <label for="nodeDefaultHeight">节点默认高度:</label>
-                        <input type="range" id="nodeDefaultHeight" name="nodeDefaultHeight" min="60" max="150" step="10"
-                            value="80">
-                        <span class="range-value" id="nodeHeightValue">80px</span>
-                    </div>
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="autoExpandResults" name="autoExpandResults">
-                            成功执行时自动展开结果区域
-                        </label>
-                    </div>
+
+                    <!-- 沐曦(GiteeAI)配置 -->
+                    <fieldset class="api-config-section" id="giteeaiConfig">
+                        <legend><i class="fas fa-server"></i> 沐曦 (GiteeAI) 配置</legend>
+                        <div class="form-group">
+                            <label for="giteeaiUrl">API地址:</label>
+                            <input type="url" id="giteeaiUrl" name="giteeaiUrl" value="https://ai.gitee.com/v1"
+                                placeholder="https://ai.gitee.com/v1">
+                        </div>
+                        <div class="form-group">
+                            <label for="giteeaiKey">API令牌:</label>
+                            <input type="password" id="giteeaiKey" name="giteeaiKey" placeholder="输入GiteeAI访问令牌">
+                        </div>
+                        <div class="form-group">
+                            <label for="giteeaiModel">默认文本模型:</label>
+                            <select id="giteeaiModel" name="giteeaiModel">
+                                <optgroup label="推荐模型">
+                                    <option value="DeepSeek-V3">DeepSeek-V3 (推荐)</option>
+                                    <option value="DeepSeek-R1">DeepSeek-R1 (深度思考)</option>
+                                    <option value="Qwen3-32B">Qwen3-32B</option>
+                                </optgroup>
+                                <optgroup label="其他模型">
+                                    <option value="QwQ-32B">QwQ-32B</option>
+                                    <option value="Qwen2.5-72B-Instruct">Qwen2.5-72B-Instruct</option>
+                                    <option value="GLM-4-9B-Chat">GLM-4-9B-Chat</option>
+                                    <option value="InternLM3-8B-Instruct">InternLM3-8B-Instruct</option>
+                                </optgroup>
+                                <optgroup label="免费模型">
+                                    <option value="Qwen3-8B">Qwen3-8B (免费)</option>
+                                    <option value="Qwen3-4B">Qwen3-4B (免费)</option>
+                                    <option value="Qwen2-7B-Instruct">Qwen2-7B-Instruct (免费)</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="giteeaiImageModel">默认图像模型:</label>
+                            <select id="giteeaiImageModel" name="giteeaiImageModel">
+                                <option value="Kolors" selected>Kolors (可灵-推荐)</option>
+                                <option value="flux-1-schnell">FLUX.1-schnell (快速)</option>
+                                <option value="FLUX.1-dev">FLUX.1-dev (高质量)</option>
+                                <option value="Qwen-Image">Qwen-Image</option>
+                                <option value="z-image-turbo">z-image-turbo</option>
+                                <option value="HiDream-I1-Full">HiDream-I1-Full</option>
+                                <option value="stable-diffusion-3.5-large-turbo">SD 3.5 Large Turbo</option>
+                            </select>
+                        </div>
+                    </fieldset>
+
+                    <!-- OpenAI格式配置 -->
+                    <fieldset class="api-config-section" id="openaiConfig">
+                        <legend><i class="fas fa-cloud"></i> OpenAI 格式配置</legend>
+                        <div class="form-group">
+                            <label for="openaiUrl">API地址:</label>
+                            <input type="url" id="openaiUrl" name="openaiUrl" value="https://api.chatanywhere.tech/v1"
+                                placeholder="https://api.openai.com/v1">
+                        </div>
+                        <div class="form-group">
+                            <label for="openaiKey">API密钥:</label>
+                            <input type="password" id="openaiKey" name="openaiKey" placeholder="sk-...">
+                        </div>
+                        <div class="form-group">
+                            <label for="openaiModel">默认文本模型:</label>
+                            <select id="openaiModel" name="openaiModel">
+                                <option value="gpt-4o-mini">GPT-4o Mini</option>
+                                <option value="gpt-4o">GPT-4o</option>
+                                <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                                <option value="gpt-4">GPT-4</option>
+                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                                <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="openaiImageModel">默认图像模型:</label>
+                            <select id="openaiImageModel" name="openaiImageModel">
+                                <option value="dall-e-3">DALL-E 3</option>
+                                <option value="dall-e-2">DALL-E 2</option>
+                            </select>
+                        </div>
+                    </fieldset>
+
+                    <!-- 通用配置 -->
+                    <fieldset class="api-config-section">
+                        <legend><i class="fas fa-sliders-h"></i> 通用配置</legend>
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label for="maxTokens">最大Token数:</label>
+                                <input type="number" id="maxTokens" name="maxTokens" placeholder="4096" min="1"
+                                    max="100000">
+                            </div>
+                            <div class="form-group half">
+                                <label for="temperature">Temperature:</label>
+                                <input type="number" id="temperature" name="temperature" placeholder="0.7" min="0"
+                                    max="2" step="0.1">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label for="nodeDefaultWidth">节点默认宽度:</label>
+                                <input type="range" id="nodeDefaultWidth" name="nodeDefaultWidth" min="120" max="300"
+                                    step="10" value="180">
+                                <span class="range-value" id="nodeWidthValue">180px</span>
+                            </div>
+                            <div class="form-group half">
+                                <label for="nodeDefaultHeight">节点默认高度:</label>
+                                <input type="range" id="nodeDefaultHeight" name="nodeDefaultHeight" min="60" max="150"
+                                    step="10" value="80">
+                                <span class="range-value" id="nodeHeightValue">80px</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="autoExpandResults" name="autoExpandResults">
+                                成功执行时自动展开结果区域
+                            </label>
+                        </div>
+                    </fieldset>
                 </form>
             </div>
             <div class="modal-footer">
@@ -493,6 +642,65 @@
         </div>
     </div>
 
+    <!-- 导出可执行文件模态框 -->
+    <div id="exportExecutableModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-file-code"></i> 导出为可执行文件</h3>
+                <span class="modal-close" id="closeExportExecutable">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 20px; color: #b0bec5;">将当前工作流导出为可独立运行的程序文件，无需依赖本平台即可执行。</p>
+
+                <div class="export-options">
+                    <div class="export-option" data-format="html">
+                        <div class="export-option-icon">
+                            <i class="fab fa-html5" style="color: #e44d26;"></i>
+                        </div>
+                        <div class="export-option-info">
+                            <h4>HTML 独立版</h4>
+                            <p>单个HTML文件，可在任何浏览器中直接运行</p>
+                            <span class="badge">推荐</span>
+                        </div>
+                    </div>
+
+                    <div class="export-option" data-format="nodejs">
+                        <div class="export-option-icon">
+                            <i class="fab fa-node-js" style="color: #68a063;"></i>
+                        </div>
+                        <div class="export-option-info">
+                            <h4>Node.js 项目</h4>
+                            <p>完整的Node.js项目包，支持命令行运行和模块调用</p>
+                            <span class="badge">ZIP包</span>
+                        </div>
+                    </div>
+
+                    <div class="export-option" data-format="python">
+                        <div class="export-option-icon">
+                            <i class="fab fa-python" style="color: #3776ab;"></i>
+                        </div>
+                        <div class="export-option-info">
+                            <h4>Python 脚本</h4>
+                            <p>Python项目包，支持命令行运行和作为模块导入</p>
+                            <span class="badge">ZIP包</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="export-settings"
+                    style="margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="includeApiKey" style="margin-right: 10px;">
+                        <span>包含API密钥 <small style="color: #ff9800;">(不推荐，有安全风险)</small></span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelExportExecutable">取消</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 上下文菜单 -->
     <div id="contextMenu" class="context-menu hidden">
         <div class="context-item" data-action="viewCode">
@@ -516,48 +724,73 @@
     </div>
 
     <!-- 加载脚本 -->
-    <!-- 新的API管理系统 -->
-
-    <script src="js/resource-loader.js"></script>
+    <!-- 新的API管理系统 - 必须最先加载 -->
+    <script src="js/api/api-manager.js"></script>
+    <script src="js/api/simple-client.js"></script>
 
     <!-- 原有脚本（向后兼容） -->
-    <script src="js/ui-framework.js"></script>
-    <script src="js/network-client.js"></script>
-    <script src="js/health-checker.js"></script>
-    <script src="js/performance-monitor.js"></script>
-    <script src="js/model-adapter.js"></script>
-    <script src="js/metrics-collector.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/variable-manager.js"></script>
+    <script src="js/popup-manager.js"></script>
+    <script src="js/services/integration-services.js"></script>
+    <script src="js/nodes.js"></script>
 
     <!-- 交互节点基类（需要在 nodes.js 之后加载） -->
-    <script src="js/debug-console.js"></script>
+    <script src="js/interaction/interaction-node.js"></script>
 
     <!-- 代码编辑器模块 -->
-    <script src="js/component-registry.js"></script>
-    <script src="js/router-system.js"></script>
-    <script src="js/utility-functions.js"></script>
-    <script src="js/analytics-reporter.js"></script>
+    <script src="js/interaction/code-execution-engine.js"></script>
+    <script src="js/interaction/ai-code-assistant.js"></script>
+    <script src="js/interaction/code-editor-window.js"></script>
+    <script src="js/interaction/code-editor-node.js"></script>
+
+    <!-- 文档编辑器模块 -->
+    <script src="js/interaction/document-ai-assistant.js"></script>
+    <script src="js/interaction/document-editor-window.js"></script>
+    <script src="js/interaction/document-editor-node.js"></script>
 
     <!-- 浏览器模块 -->
-    <script src="js/view-controller.js"></script>
-    <script src="js/error-tracker.js"></script>
-    <script src="js/state-manager.js"></script>
-    <script src="js/event-handler.js"></script>
+    <script src="js/interaction/browser-window.js"></script>
+    <script src="js/interaction/browser-node.js"></script>
+    <script src="js/interaction/data-analysis-window.js"></script>
+    <script src="js/interaction/data-analysis-node.js"></script>
 
-    <script src="js/module-manager.js"></script>
-    <script src="js/data-processor.js"></script>
-    <script src="js/cache-manager.js"></script> <!-- 流处理模块 -->
-    <script src="js/core-engine.js"></script>
+    <script src="js/workflow.js"></script>
+    <script src="js/execution.js"></script>
+    <script src="js/ui.js"></script> <!-- 流处理模块 -->
+    <script src="js/stream/stream-engine.js"></script>
 
     <!-- 智能体模块 -->
-    <script src="js/config-loader.js"></script>
-    <script src="js/session-handler.js"></script>
-    <script src="js/template-engine.js"></script>
-    <script src="js/security-layer.js"></script>
+    <script src="js/agents/agent-engine.js"></script>
+    <script src="js/agents/agent-ui.js"></script>
+    <script src="js/agents/agent-manager.js"></script>
+    <script src="js/agents/conversation-window.js"></script>
+    <script src="js/agents/workflow-agent.js"></script>
+    <script src="js/agents/agent-conversation-window.js"></script>
 
     <!-- 媒体处理模块 -->
-    <script src="js/service-worker.js"></script>
+    <script src="js/media/media-recorder-node.js"></script>
+    <script src="js/media/media-recorder-workflow-node.js"></script>
 
-    <script src="js/runtime-base.js"></script>
+    <!-- 存储管理模块 -->
+    <script src="js/storage/media-manager.js"></script>
+
+    <!-- 通信中心模块 -->
+    <script src="js/communication/communication-hub.js"></script>
+    <script src="js/communication/workflow-communication-window.js"></script>
+    <script src="js/communication/workflow-communication-node.js"></script>
+
+    <!-- 触发器引擎模块 -->
+    <script src="js/triggers/trigger-engine.js"></script>
+
+    <!-- 集成触发器节点（兼容WorkflowNode的新版本） -->
+    <script src="js/nodes/integrated-trigger-nodes.js"></script>
+
+    <!-- 工作流导出模块 -->
+    <script src="js/export/workflow-exporter.js"></script>
+
+    <script src="js/main.js"></script>
 </body>
 
 </html>
