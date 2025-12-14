@@ -1,9 +1,9 @@
-/**
- * 多媒体录制中心样式
- * 包含录音、录像、拍照功能的UI样式
+﻿/**
+ * 澶氬獟浣撳綍鍒朵腑蹇冩牱寮?
+ * 鍖呭惈褰曢煶銆佸綍鍍忋€佹媿鐓у姛鑳界殑UI鏍峰紡
  */
 
-/* ==================== 窗口基础样式 ==================== */
+/* ==================== 绐楀彛鍩虹鏍峰紡 ==================== */
 .media-recorder-window {
     position: fixed;
     background: #ffffff;
@@ -23,14 +23,15 @@
     box-shadow: 0 16px 64px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
-/* ==================== 窗口头部 ==================== */
+/* ==================== 绐楀彛澶撮儴 ==================== */
 .media-window-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 12px 16px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(90deg, #f8fafc 0%, #e2e8f0 100%);
+    border-bottom: 1px solid #e2e8f0;
+    color: #1e293b;
     cursor: move;
     user-select: none;
 }
@@ -41,10 +42,12 @@
     gap: 10px;
     font-weight: 600;
     font-size: 15px;
+    color: #1e293b;
 }
 
 .media-window-title i {
     font-size: 18px;
+    color: #3b82f6;
 }
 
 .media-window-controls {
@@ -56,21 +59,38 @@
     width: 28px;
     height: 28px;
     border-radius: 6px;
-    border: none;
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
+    border: 1px solid #e2e8f0;
+    background: #f1f5f9;
+    color: #64748b;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s;
+    transition: all 0.2s;
 }
 
 .media-window-controls .media-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: #e2e8f0;
 }
 
-/* ==================== 窗口主体 ==================== */
+.media-window-controls .media-btn-close:hover {
+    background: #fee2e2;
+    border-color: #fecaca;
+    color: #ef4444;
+}
+
+/* 濯掍綋褰曞埗鍣ㄥ姛鑳芥寜閽鑹?*/
+.media-window-controls .media-btn-minimize {
+    background: #fef9c3 !important;
+    border-color: #fde047 !important;
+    color: #ca8a04 !important;
+}
+
+.media-window-controls .media-btn-minimize:hover {
+    background: #fef08a !important;
+}
+
+/* ==================== 绐楀彛涓讳綋 ==================== */
 .media-window-body {
     flex: 1;
     display: flex;
@@ -82,7 +102,7 @@
     min-height: 0;
 }
 
-/* ==================== 模式切换标签 ==================== */
+/* ==================== 妯″紡鍒囨崲鏍囩 ==================== */
 .media-mode-tabs {
     display: flex;
     background: #f1f3f5;
@@ -110,12 +130,12 @@
 
 .media-tab:hover {
     background: rgba(102, 126, 234, 0.1);
-    color: #667eea;
+    color: #0ea5e9;
 }
 
 .media-tab.active {
     background: white;
-    color: #667eea;
+    color: #0ea5e9;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -123,7 +143,7 @@
     font-size: 14px;
 }
 
-/* ==================== 预览区域 ==================== */
+/* ==================== 棰勮鍖哄煙 ==================== */
 .media-preview-area {
     background: #f8f9fa;
     border-radius: 12px;
@@ -171,7 +191,7 @@
     object-fit: cover;
 }
 
-/* ==================== 录制信息 ==================== */
+/* ==================== 褰曞埗淇℃伅 ==================== */
 .recording-info-panel {
     display: flex;
     flex-direction: column;
@@ -193,7 +213,7 @@
     font-weight: 500;
 }
 
-/* ==================== 控制按钮 ==================== */
+/* ==================== 鎺у埗鎸夐挳 ==================== */
 .media-control-buttons {
     display: flex;
     justify-content: center;
@@ -284,7 +304,7 @@
     box-shadow: 0 6px 24px rgba(52, 152, 219, 0.5);
 }
 
-/* ==================== 设置面板 ==================== */
+/* ==================== 璁剧疆闈㈡澘 ==================== */
 .media-settings-panel {
     background: #f8f9fa;
     border-radius: 12px;
@@ -310,7 +330,7 @@
 }
 
 .settings-section h4 i {
-    color: #667eea;
+    color: #0ea5e9;
 }
 
 .setting-group {
@@ -342,7 +362,7 @@
 
 .media-select:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #0ea5e9;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -365,10 +385,10 @@
     width: 16px;
     height: 16px;
     cursor: pointer;
-    accent-color: #667eea;
+    accent-color: #0ea5e9;
 }
 
-/* ==================== 文件列表 ==================== */
+/* ==================== 鏂囦欢鍒楄〃 ==================== */
 .media-files-panel {
     background: #f8f9fa;
     border-radius: 12px;
@@ -434,7 +454,7 @@
     width: 36px;
     height: 36px;
     border-radius: 8px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
     color: white;
     display: flex;
     align-items: center;
@@ -478,10 +498,10 @@
 
 .media-btn-small:hover {
     background: #e9ecef;
-    color: #667eea;
+    color: #0ea5e9;
 }
 
-/* ==================== 转写面板 ==================== */
+/* ==================== 杞啓闈㈡澘 ==================== */
 .transcription-panel {
     background: #f8f9fa;
     border-radius: 12px;
@@ -507,7 +527,7 @@
 }
 
 .transcription-header h4 i {
-    color: #667eea;
+    color: #0ea5e9;
 }
 
 .transcription-actions {
@@ -536,7 +556,7 @@
     align-items: center;
     justify-content: center;
     gap: 10px;
-    color: #667eea;
+    color: #0ea5e9;
     padding: 20px;
 }
 
@@ -587,7 +607,7 @@
     font-size: 18px;
 }
 
-/* ==================== 节点样式 ==================== */
+/* ==================== 鑺傜偣鏍峰紡 ==================== */
 .media-recorder-node-content {
     display: flex;
     flex-direction: column;
@@ -600,7 +620,7 @@
     width: 40px;
     height: 40px;
     border-radius: 10px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
     color: white;
     display: flex;
     align-items: center;
@@ -621,7 +641,7 @@
     justify-content: center;
 }
 
-/* 节点预览样式 - 与 DocumentEditorNode 一致 */
+/* 鑺傜偣棰勮鏍峰紡 - 涓?DocumentEditorNode 涓€鑷?*/
 .media-recorder-node-preview {
     display: flex;
     align-items: center;
@@ -633,7 +653,7 @@
     width: 36px;
     height: 36px;
     border-radius: 8px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
     color: white;
     display: flex;
     align-items: center;
@@ -660,7 +680,7 @@
 
 .media-recorder-node-preview .preview-features {
     font-size: 10px;
-    color: #667eea;
+    color: #0ea5e9;
 }
 
 .media-recorder-node-preview .preview-hint {
@@ -672,7 +692,7 @@
     font-size: 10px;
     padding: 2px 6px;
     background: rgba(102, 126, 234, 0.1);
-    color: #667eea;
+    color: #0ea5e9;
     border-radius: 4px;
 }
 
@@ -702,12 +722,12 @@
 }
 
 .media-recorder-node-content .node-btn:hover {
-    background: #667eea;
+    background: #0ea5e9;
     color: white;
-    border-color: #667eea;
+    border-color: #0ea5e9;
 }
 
-/* ==================== 配置对话框 ==================== */
+/* ==================== 閰嶇疆瀵硅瘽妗?==================== */
 .media-recorder-config-dialog {
     position: fixed;
     top: 0;
@@ -757,7 +777,7 @@
 }
 
 .media-recorder-config-dialog .config-header h3 i {
-    color: #667eea;
+    color: #0ea5e9;
 }
 
 .media-recorder-config-dialog .config-close {
@@ -825,7 +845,7 @@
 .media-recorder-config-dialog .config-group input[type="text"]:focus,
 .media-recorder-config-dialog .config-group select:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #0ea5e9;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -859,7 +879,7 @@
 }
 
 .media-recorder-config-dialog .btn-save {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
     border: none;
     color: white;
 }
@@ -869,7 +889,7 @@
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-/* ==================== 滚动条样式 ==================== */
+/* ==================== 婊氬姩鏉℃牱寮?==================== */
 .media-recorder-window ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -888,7 +908,7 @@
     background: #adb5bd;
 }
 
-/* ==================== 响应式调整 ==================== */
+/* ==================== 鍝嶅簲寮忚皟鏁?==================== */
 @media (max-width: 520px) {
     .media-recorder-window {
         width: calc(100vw - 20px) !important;

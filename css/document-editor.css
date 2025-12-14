@@ -1,9 +1,9 @@
-/**
- * 文档编辑器样式 - Document Editor Styles
- * 配合 document-editor-window.js 使用
+﻿/**
+ * 鏂囨。缂栬緫鍣ㄦ牱寮?- Document Editor Styles
+ * 閰嶅悎 document-editor-window.js 浣跨敤
  */
 
-/* ==================== 窗口容器 ==================== */
+/* ==================== 绐楀彛瀹瑰櫒 ==================== */
 .document-editor-window {
     position: fixed;
     background: #ffffff;
@@ -20,14 +20,15 @@
     box-shadow: 0 16px 64px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
-/* ==================== 标题栏 ==================== */
+/* ==================== 鏍囬鏍?==================== */
 .doc-window-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 12px 16px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(90deg, #f8fafc 0%, #e2e8f0 100%);
+    border-bottom: 1px solid #e2e8f0;
+    color: #1e293b;
     cursor: move;
     user-select: none;
 }
@@ -42,11 +43,13 @@
 
 .doc-window-title i {
     font-size: 16px;
+    color: #3b82f6;
 }
 
 .doc-window-title .doc-name {
     font-weight: 400;
-    opacity: 0.9;
+    opacity: 0.8;
+    color: #475569;
     max-width: 200px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -54,7 +57,7 @@
 }
 
 .doc-window-title .modified-indicator {
-    color: #ffd700;
+    color: #f59e0b;
     font-size: 12px;
 }
 
@@ -64,9 +67,9 @@
 }
 
 .doc-btn {
-    background: rgba(255, 255, 255, 0.15);
-    border: none;
-    color: white;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
     width: 32px;
     height: 32px;
     border-radius: 6px;
@@ -78,16 +81,20 @@
 }
 
 .doc-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: #e2e8f0;
     transform: translateY(-1px);
 }
 
 .doc-btn.active {
-    background: rgba(255, 255, 255, 0.35);
+    background: #dbeafe;
+    border-color: #93c5fd;
+    color: #3b82f6;
 }
 
 .doc-btn-close:hover {
-    background: #e74c3c;
+    background: #fee2e2 !important;
+    border-color: #fecaca !important;
+    color: #ef4444 !important;
 }
 
 /* ==================== 主体区域 ==================== */
@@ -96,6 +103,27 @@
     flex: 1;
     overflow: hidden;
     background: #f8f9fa;
+}
+
+/* 文档编辑器功能按钮颜色（补充） */
+.doc-btn-canvas {
+    background: #fce7f3 !important;
+    border-color: #f9a8d4 !important;
+    color: #db2777 !important;
+}
+
+.doc-btn-canvas:hover {
+    background: #fbcfe8 !important;
+}
+
+.doc-btn-node {
+    background: #dbeafe !important;
+    border-color: #93c5fd !important;
+    color: #2563eb !important;
+}
+
+.doc-btn-node:hover {
+    background: #bfdbfe !important;
 }
 
 /* ==================== 侧边栏 ==================== */
@@ -140,7 +168,7 @@
 
 .sidebar-header h4 i {
     font-size: 12px;
-    color: #667eea;
+    color: #0ea5e9;
 }
 
 .sidebar-btn {
@@ -158,7 +186,7 @@
     color: #495057;
 }
 
-/* 变量列表 */
+/* 鍙橀噺鍒楄〃 */
 .variable-list {
     flex: 1;
     overflow-y: auto;
@@ -198,7 +226,7 @@
 }
 
 .var-insert-btn {
-    background: #667eea;
+    background: #0ea5e9;
     color: white;
     border: none;
     width: 24px;
@@ -223,7 +251,7 @@
     font-size: 13px;
 }
 
-/* AI助手面板 */
+/* AI鍔╂墜闈㈡澘 */
 .ai-section {
     flex: 1;
     display: flex;
@@ -253,7 +281,7 @@
 
 .ai-welcome i {
     font-size: 32px;
-    color: #667eea;
+    color: #0ea5e9;
     margin-bottom: 12px;
 }
 
@@ -283,7 +311,7 @@
 }
 
 .ai-message-user {
-    background: #667eea;
+    background: #0ea5e9;
     color: white;
     margin-left: auto;
     border-bottom-right-radius: 4px;
@@ -328,7 +356,7 @@
 }
 
 .action-btn {
-    background: #667eea;
+    background: #0ea5e9;
     color: white;
     border: none;
     padding: 4px 10px;
@@ -364,12 +392,12 @@
 
 .ai-input:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #0ea5e9;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .ai-send-btn {
-    background: #667eea;
+    background: #0ea5e9;
     color: white;
     align-self: flex-end;
 }
@@ -378,7 +406,7 @@
     background: #5a6fd6;
 }
 
-/* 导出面板 */
+/* 瀵煎嚭闈㈡澘 */
 .export-section {
     padding-bottom: 12px;
 }
@@ -406,16 +434,16 @@
 }
 
 .export-btn:hover {
-    background: #667eea;
+    background: #0ea5e9;
     color: white;
-    border-color: #667eea;
+    border-color: #0ea5e9;
 }
 
 .export-btn i {
     font-size: 14px;
 }
 
-/* ==================== 主编辑区域 ==================== */
+/* ==================== 涓荤紪杈戝尯鍩?==================== */
 .doc-main-area {
     flex: 1;
     display: flex;
@@ -424,7 +452,7 @@
     background: white;
 }
 
-/* 工具栏 */
+/* 宸ュ叿鏍?*/
 .doc-toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -457,7 +485,7 @@
 }
 
 .doc-toolbar button.ql-active {
-    background: #667eea;
+    background: #0ea5e9;
     color: white;
 }
 
@@ -475,10 +503,10 @@
 }
 
 .toolbar-btn:hover {
-    color: #667eea;
+    color: #0ea5e9;
 }
 
-/* Quill编辑器容器 */
+/* Quill缂栬緫鍣ㄥ鍣?*/
 .doc-editor-container {
     flex: 1;
     overflow: hidden;
@@ -493,7 +521,7 @@
     line-height: 1.8;
 }
 
-/* Quill编辑器样式覆盖 */
+/* Quill缂栬緫鍣ㄦ牱寮忚鐩?*/
 .doc-editor .ql-editor {
     padding: 30px 40px;
     min-height: 100%;
@@ -518,7 +546,7 @@
 }
 
 .doc-editor .ql-editor blockquote {
-    border-left: 4px solid #667eea;
+    border-left: 4px solid #0ea5e9;
     padding-left: 16px;
     color: #6c757d;
     margin: 1em 0;
@@ -543,7 +571,7 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* 变量标签样式 */
+/* 鍙橀噺鏍囩鏍峰紡 */
 .doc-variable {
     display: inline-block;
     background: linear-gradient(135deg, #e3f2fd 0%, #e8eaf6 100%);
@@ -561,7 +589,7 @@
     background: linear-gradient(135deg, #bbdefb 0%, #c5cae9 100%);
 }
 
-/* 回退编辑器 */
+/* 鍥為€€缂栬緫鍣?*/
 .fallback-doc-editor {
     width: 100%;
     height: 100%;
@@ -574,7 +602,7 @@
     font-family: inherit;
 }
 
-/* ==================== 画板区域 ==================== */
+/* ==================== 鐢绘澘鍖哄煙 ==================== */
 .doc-canvas-container {
     flex: 1;
     display: flex;
@@ -592,6 +620,7 @@
     border-radius: 8px;
     margin-bottom: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    flex-wrap: wrap;
 }
 
 .canvas-tool {
@@ -613,7 +642,7 @@
 }
 
 .canvas-tool.active {
-    background: #667eea;
+    background: #0ea5e9;
     color: white;
 }
 
@@ -658,7 +687,42 @@
 
 .canvas-action:hover {
     background: #e9ecef;
-    color: #667eea;
+    color: #0ea5e9;
+}
+
+/* 画板操作按钮 - 在工具栏中 */
+.canvas-action-btn {
+    height: 36px;
+    padding: 0 12px;
+    border: 1px solid #dee2e6;
+    background: #f8f9fa;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: #495057;
+    font-size: 12px;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.canvas-action-btn:hover {
+    background: #e9ecef;
+    border-color: #0ea5e9;
+    color: #0ea5e9;
+}
+
+.canvas-action-btn.primary {
+    background: #0ea5e9;
+    border-color: #0ea5e9;
+    color: white;
+}
+
+.canvas-action-btn.primary:hover {
+    background: #0284c7;
+    border-color: #0284c7;
 }
 
 .doc-canvas-container canvas {
@@ -669,6 +733,7 @@
     cursor: crosshair;
 }
 
+/* 保留旧的canvas-actions样式以防其他地方使用 */
 .canvas-actions {
     display: flex;
     justify-content: center;
@@ -677,7 +742,7 @@
 }
 
 .canvas-actions .doc-btn {
-    background: #667eea;
+    background: #0ea5e9;
     padding: 8px 20px;
     width: auto;
     font-size: 13px;
@@ -688,7 +753,7 @@
     background: #5a6fd6;
 }
 
-/* ==================== 状态栏 ==================== */
+/* ==================== 鐘舵€佹爮 ==================== */
 .doc-statusbar {
     display: flex;
     align-items: center;
@@ -709,7 +774,7 @@
     border-right: none;
 }
 
-/* ==================== 响应式调整 ==================== */
+/* ==================== 鍝嶅簲寮忚皟鏁?==================== */
 @media (max-width: 900px) {
     .doc-sidebar {
         width: 220px;
@@ -735,7 +800,7 @@
     }
 }
 
-/* ==================== Quill主题覆盖 ==================== */
+/* ==================== Quill涓婚瑕嗙洊 ==================== */
 .document-editor-window .ql-toolbar.ql-snow {
     border: none;
     background: transparent;
@@ -760,17 +825,17 @@
 
 .document-editor-window .ql-snow.ql-toolbar button:hover,
 .document-editor-window .ql-snow .ql-toolbar button:hover {
-    color: #667eea;
+    color: #0ea5e9;
 }
 
 .document-editor-window .ql-snow.ql-toolbar button:hover .ql-stroke,
 .document-editor-window .ql-snow .ql-toolbar button:hover .ql-stroke {
-    stroke: #667eea;
+    stroke: #0ea5e9;
 }
 
 .document-editor-window .ql-snow.ql-toolbar button:hover .ql-fill,
 .document-editor-window .ql-snow .ql-toolbar button:hover .ql-fill {
-    fill: #667eea;
+    fill: #0ea5e9;
 }
 
 .document-editor-window .ql-snow.ql-toolbar button.ql-active,
@@ -788,7 +853,7 @@
     fill: white;
 }
 
-/* ==================== 动画 ==================== */
+/* ==================== 鍔ㄧ敾 ==================== */
 @keyframes docWindowIn {
     from {
         opacity: 0;
@@ -805,7 +870,7 @@
     animation: docWindowIn 0.3s ease;
 }
 
-/* ==================== 滚动条样式 ==================== */
+/* ==================== 婊氬姩鏉℃牱寮?==================== */
 .document-editor-window ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -825,7 +890,7 @@
     background: #a1a1a1;
 }
 
-/* ==================== 打印样式 ==================== */
+/* ==================== 鎵撳嵃鏍峰紡 ==================== */
 @media print {
     .document-editor-window {
         position: static;
@@ -853,7 +918,7 @@
     }
 }
 
-/* ==================== 节点预览样式 ==================== */
+/* ==================== 鑺傜偣棰勮鏍峰紡 ==================== */
 .document-editor-preview {
     display: flex;
     flex-direction: column;
@@ -868,7 +933,8 @@
 .document-editor-preview .preview-icon {
     width: 50px;
     height: 50px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(90deg, #f8fafc 0%, #e2e8f0 100%);
+    border-bottom: 1px solid #e2e8f0;
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -900,9 +966,10 @@
     color: #888;
 }
 
-/* 工具栏按钮样式 */
+/* 宸ュ叿鏍忔寜閽牱寮?*/
 #documentEditorBtn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(90deg, #f8fafc 0%, #e2e8f0 100%);
+    border-bottom: 1px solid #e2e8f0;
     color: white;
     border: none;
     margin-right: 8px;

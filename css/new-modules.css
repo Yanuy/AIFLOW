@@ -1,10 +1,10 @@
-/**
- * 新模块样式 - 智能体UI、触发器节点、媒体管理
- * 白色主题风格 - 彻底重构版
+﻿/**
+ * 鏂版ā鍧楁牱寮?- 鏅鸿兘浣揢I銆佽Е鍙戝櫒鑺傜偣銆佸獟浣撶鐞?
+ * 鐧借壊涓婚椋庢牸 - 褰诲簳閲嶆瀯鐗?
  */
 
-/* ==================== 智能体窗口样式 ==================== */
-/* 匹配 agent-ui.js 中使用的类名 .agent-window */
+/* ==================== 鏅鸿兘浣撶獥鍙ｆ牱寮?==================== */
+/* 鍖归厤 agent-ui.js 涓娇鐢ㄧ殑绫诲悕 .agent-window */
 .agent-window {
     position: fixed;
     background: #ffffff;
@@ -99,13 +99,13 @@
     }
 }
 
-/* 智能体窗口头部 */
+/* 鏅鸿兘浣撶獥鍙ｅご閮?*/
 .agent-window-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 14px 18px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
     cursor: move;
     user-select: none;
     flex-shrink: 0;
@@ -162,7 +162,7 @@
     background: #ff5f57;
 }
 
-/* 智能体工具栏 */
+/* 鏅鸿兘浣撳伐鍏锋爮 */
 .agent-window-toolbar {
     display: flex;
     gap: 6px;
@@ -189,8 +189,8 @@
 
 .agent-tool-btn:hover {
     background: #f0f0ff;
-    border-color: #667eea;
-    color: #667eea;
+    border-color: #0ea5e9;
+    color: #0ea5e9;
     transform: translateY(-1px);
 }
 
@@ -204,7 +204,7 @@
     color: #e53935;
 }
 
-/* 智能体消息区域 */
+/* 鏅鸿兘浣撴秷鎭尯鍩?*/
 .agent-window-body {
     flex: 1;
     overflow: hidden;
@@ -246,7 +246,7 @@
     background: #bdbdbd;
 }
 
-/* 欢迎区域 */
+/* 娆㈣繋鍖哄煙 */
 .agent-welcome {
     display: flex;
     flex-direction: column;
@@ -261,7 +261,7 @@
     width: 72px;
     height: 72px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -309,14 +309,14 @@
 }
 
 .suggestion-btn:hover {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
     border-color: transparent;
     color: #ffffff;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
-/* ==================== 消息样式 - 关键修复 ==================== */
+/* ==================== 娑堟伅鏍峰紡 - 鍏抽敭淇 ==================== */
 .agent-message {
     display: flex;
     flex-direction: row;
@@ -326,22 +326,22 @@
     box-sizing: border-box;
 }
 
-/* 用户消息靠右 */
+/* 鐢ㄦ埛娑堟伅闈犲彸 */
 .agent-message-user {
     flex-direction: row-reverse;
 }
 
-/* 助手消息靠左 */
+/* 鍔╂墜娑堟伅闈犲乏 */
 .agent-message-assistant {
     flex-direction: row;
 }
 
-/* 系统消息居中 */
+/* 绯荤粺娑堟伅灞呬腑 */
 .agent-message-system {
     justify-content: center;
 }
 
-/* 头像样式 */
+/* 澶村儚鏍峰紡 */
 .message-avatar {
     width: 36px;
     height: 36px;
@@ -356,16 +356,16 @@
 }
 
 .agent-message-user .message-avatar {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
     color: #ffffff;
 }
 
 .agent-message-assistant .message-avatar {
     background: #f0f2f5;
-    color: #667eea;
+    color: #0ea5e9;
 }
 
-/* 消息内容容器 - 关键！使用 block 布局 */
+/* 娑堟伅鍐呭瀹瑰櫒 - 鍏抽敭锛佷娇鐢?block 甯冨眬 */
 .message-content {
     max-width: calc(100% - 60px);
     padding: 12px 16px;
@@ -381,7 +381,7 @@
 }
 
 .agent-message-user .message-content {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
     color: #ffffff;
     border-bottom-right-radius: 6px;
 }
@@ -406,7 +406,7 @@
     font-size: 13px;
 }
 
-/* 消息内容排版 - 确保正常水平显示 */
+/* 娑堟伅鍐呭鎺掔増 - 纭繚姝ｅ父姘村钩鏄剧ず */
 .message-content * {
     display: block;
 }
@@ -458,7 +458,7 @@
     margin-top: 4px;
 }
 
-/* 消息内代码块 */
+/* 娑堟伅鍐呬唬鐮佸潡 */
 .message-content pre {
     background: rgba(0, 0, 0, 0.07);
     padding: 12px 14px;
@@ -486,7 +486,7 @@
     background: rgba(255, 255, 255, 0.15);
 }
 
-/* 输入加载动画 */
+/* 杈撳叆鍔犺浇鍔ㄧ敾 */
 .typing-indicator {
     display: flex;
     flex-direction: row;
@@ -498,7 +498,7 @@
 .typing-indicator span {
     width: 10px;
     height: 10px;
-    background: #667eea;
+    background: #0ea5e9;
     border-radius: 50%;
     display: inline-block;
     animation: bounce 1.4s infinite ease-in-out both;
@@ -536,7 +536,7 @@
     display: block;
 }
 
-/* 智能体输入区域 */
+/* 鏅鸿兘浣撹緭鍏ュ尯鍩?*/
 .agent-window-footer {
     padding: 14px 16px;
     background: #fafbfc;
@@ -569,7 +569,7 @@
 }
 
 .agent-input:focus {
-    border-color: #667eea;
+    border-color: #0ea5e9;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
 }
 
@@ -583,7 +583,7 @@
     min-width: 44px;
     border: none;
     border-radius: 12px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
     color: #ffffff;
     font-size: 18px;
     cursor: pointer;
@@ -611,7 +611,7 @@
     text-align: right;
 }
 
-/* 调整大小手柄 */
+/* 璋冩暣澶у皬鎵嬫焺 */
 .agent-resize-handle {
     position: absolute;
     left: 0;
@@ -633,10 +633,10 @@
 }
 
 .agent-resize-handle:hover::before {
-    border-color: #667eea;
+    border-color: #0ea5e9;
 }
 
-/* ==================== 常驻浮动按钮 - 更大更醒目 ==================== */
+/* ==================== 甯搁┗娴姩鎸夐挳 - 鏇村ぇ鏇撮啋鐩?==================== */
 .agent-minimized-btn {
     position: fixed;
     right: 24px;
@@ -645,7 +645,7 @@
     height: 64px;
     border-radius: 50%;
     border: none;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
     color: #ffffff;
     font-size: 28px;
     cursor: pointer;
@@ -696,7 +696,7 @@
     }
 }
 
-/* ==================== 触发器节点样式 ==================== */
+/* ==================== 瑙﹀彂鍣ㄨ妭鐐规牱寮?==================== */
 .trigger-node {
     display: flex;
     align-items: center;
@@ -711,7 +711,7 @@
     align-items: center;
     justify-content: center;
     border-radius: 10px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, #0ea5e9, #3b82f6);
     color: #ffffff;
 }
 
@@ -771,7 +771,7 @@
     color: #c62828;
 }
 
-/* 不同类型触发器的图标颜色 */
+/* 涓嶅悓绫诲瀷瑙﹀彂鍣ㄧ殑鍥炬爣棰滆壊 */
 .schedule-trigger .trigger-icon {
     background: linear-gradient(135deg, #ff9800, #ff5722);
 }
@@ -792,7 +792,7 @@
     background: linear-gradient(135deg, #f44336, #ff9800);
 }
 
-/* 消息发送节点 */
+/* 娑堟伅鍙戦€佽妭鐐?*/
 .message-send .node-icon {
     width: 36px;
     height: 36px;
@@ -804,7 +804,7 @@
     color: #ffffff;
 }
 
-/* ==================== 节点配置对话框 ==================== */
+/* ==================== 鑺傜偣閰嶇疆瀵硅瘽妗?==================== */
 .node-config-dialog {
     position: fixed;
     top: 0;
@@ -912,7 +912,7 @@
 .config-group input:focus,
 .config-group select:focus,
 .config-group textarea:focus {
-    border-color: #667eea;
+    border-color: #0ea5e9;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -933,7 +933,7 @@
     background: #f1f3f4;
     padding: 2px 6px;
     border-radius: 4px;
-    color: #667eea;
+    color: #0ea5e9;
 }
 
 .config-info {
@@ -956,10 +956,10 @@
 .checkbox-label input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    accent-color: #667eea;
+    accent-color: #0ea5e9;
 }
 
-/* Cron 预设按钮 */
+/* Cron 棰勮鎸夐挳 */
 .cron-presets {
     display: flex;
     flex-wrap: wrap;
@@ -979,8 +979,8 @@
 }
 
 .cron-presets button:hover {
-    background: #667eea;
-    border-color: #667eea;
+    background: #0ea5e9;
+    border-color: #0ea5e9;
     color: #ffffff;
 }
 
@@ -1013,7 +1013,7 @@
 }
 
 .btn-save {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
     color: #ffffff;
 }
 
@@ -1032,7 +1032,7 @@
     background: #e8f5e9;
 }
 
-/* ==================== 节点分类侧边栏 ==================== */
+/* ==================== 鑺傜偣鍒嗙被渚ц竟鏍?==================== */
 .node-category {
     margin-bottom: 16px;
 }
@@ -1129,17 +1129,17 @@
     text-overflow: ellipsis;
 }
 
-/* 触发器分类的特殊样式 */
+/* 瑙﹀彂鍣ㄥ垎绫荤殑鐗规畩鏍峰紡 */
 .node-category[data-category="triggers"] .node-category-header {
     background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
 }
 
 .node-category[data-category="triggers"] .node-item .icon {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, #0ea5e9, #3b82f6);
     color: #ffffff;
 }
 
-/* ==================== 媒体预览 ==================== */
+/* ==================== 濯掍綋棰勮 ==================== */
 .media-preview {
     display: inline-block;
     max-width: 200px;
@@ -1180,7 +1180,7 @@
     font-size: 20px;
 }
 
-/* ==================== 通知提示 ==================== */
+/* ==================== 閫氱煡鎻愮ず ==================== */
 .notification-toast {
     position: fixed;
     bottom: 20px;
@@ -1227,7 +1227,7 @@
     }
 }
 
-/* ==================== 响应式适配 ==================== */
+/* ==================== 鍝嶅簲寮忛€傞厤 ==================== */
 @media (max-width: 768px) {
     .agent-window {
         width: 100% !important;

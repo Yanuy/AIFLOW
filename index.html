@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="css/new-modules.css">
     <link rel="stylesheet" href="css/document-editor.css">
     <link rel="stylesheet" href="css/media-recorder.css">
+    <link rel="stylesheet" href="css/enhanced-ai-assistant.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- JSZip 用于导出ZIP文件 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -34,7 +35,7 @@
             <button id="saveBtn" class="btn btn-primary" title="保存工作流">
                 <i class="fas fa-save"></i> 保存
             </button>
-            <button id="loadBtn" class="btn btn-secondary" title="加载工作流">
+            <button id="loadBtn" class="btn btn-info" title="加载工作流">
                 <i class="fas fa-folder-open"></i> 加载
             </button>
             <button id="exportBtn" class="btn btn-info" title="导出工作流">
@@ -55,6 +56,24 @@
             </button>
         </div>
         <div class="toolbar-right">
+            <button id="openCodeEditorBtn" class="btn btn-info toolbar-quick-btn" title="打开代码编辑器">
+                <i class="fas fa-code"></i> 编程
+            </button>
+            <button id="openDataAnalysisBtn" class="btn btn-info toolbar-quick-btn" title="打开数据分析">
+                <i class="fas fa-chart-line"></i> 数分
+            </button>
+            <button id="openBrowserBtn" class="btn btn-info toolbar-quick-btn" title="打开网页浏览器">
+                <i class="fas fa-globe"></i> 浏览
+            </button>
+            <button id="openChatBtn" class="btn btn-info toolbar-quick-btn" title="打开AI对话窗口">
+                <i class="fas fa-comments"></i> 对话
+            </button>
+            <button id="documentEditorBtn" class="btn btn-info toolbar-quick-btn" title="打开文档编辑器">
+                <i class="fas fa-file-alt"></i> 文档
+            </button>
+            <button id="openMediaRecorderBtn" class="btn btn-info toolbar-quick-btn" title="打开多媒体录制">
+                <i class="fas fa-video"></i> 录制
+            </button>
             <button id="settingsBtn" class="btn btn-secondary" title="设置">
                 <i class="fas fa-cog"></i> 设置
             </button>
@@ -430,9 +449,9 @@
                             <label for="giteeaiModel">默认文本模型:</label>
                             <select id="giteeaiModel" name="giteeaiModel">
                                 <optgroup label="推荐模型">
-                                    <option value="DeepSeek-V3">DeepSeek-V3 (推荐)</option>
+                                    <option value="Qwen3-32B" selected>Qwen3-32B (推荐)</option>
+                                    <option value="DeepSeek-V3">DeepSeek-V3</option>
                                     <option value="DeepSeek-R1">DeepSeek-R1 (深度思考)</option>
-                                    <option value="Qwen3-32B">Qwen3-32B</option>
                                 </optgroup>
                                 <optgroup label="其他模型">
                                     <option value="QwQ-32B">QwQ-32B</option>
@@ -744,6 +763,9 @@
     <script src="js/interaction/ai-code-assistant.js"></script>
     <script src="js/interaction/code-editor-window.js"></script>
     <script src="js/interaction/code-editor-node.js"></script>
+
+    <!-- 增强版AI助手 -->
+    <script src="js/interaction/enhanced-ai-assistant.js"></script>
 
     <!-- 文档编辑器模块 -->
     <script src="js/interaction/document-ai-assistant.js"></script>
